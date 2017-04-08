@@ -56,13 +56,15 @@ class Candle:
             self._low = lastPrint
 
 
-class Chart:
-    def __init__(self):
+class Chart(tk.Frame):
+    def __init__(self, parent=None):
+        super(Chart, self).__init__(parent)
         self._candles = []
         self._candleGroupSize = 1
         self._aggregateCandles = []
 
         self._startingTimestamp = None # Should be from when the symbol starts
+        self.pack()
 
     def setGroupSize(self, newGroupSize=1):
         self._candleGroupSize = newGroupSize
