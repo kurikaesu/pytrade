@@ -36,6 +36,10 @@ class IGMarkets_config(tk.Frame):
         self.testCredentialsButton = tk.Button(self, text="Test", command=self.testCredentials)
         self.testCredentialsButton.grid(column=0, row=4)
 
+        self.testCredentialsResponseString = tk.StringVar()
+        self.testCredentialsResponseLabel = tk.Label(self, textvariable=self.testCredentialsResponseString)
+        self.testCredentialsResponseLabel.grid(column=0, row=5, columnspan=2)
+
         self.pack()
 
     def testCredentials(self):
@@ -46,9 +50,9 @@ class IGMarkets_config(tk.Frame):
         authParams['password'] = self.apiPasswordValue.get()
 
         if self.igMarketObject.authenticate(authParams):
-            print("Success")
+            self.testCredentialsResponseString.set("Success")
         else:
-            print("Failed")
+            self.testCredentialsResponseString.set("Failed")
 
 class IGMarkets(BrokerBase):
     def __init__(self):
@@ -105,7 +109,6 @@ class IGMarkets(BrokerBase):
         return True
 
     def authFailed(self, response):
-        print("Auth failed")
         return False
 
     def refreshAccess(self):
