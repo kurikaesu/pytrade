@@ -1,13 +1,61 @@
-#from .broker_base import BrokerBase
+from .broker_base import BrokerBase
+
+import tkinter as tk
+import tkinter.ttk as ttk
+
 import requests
 import json
 
-#class IGMarkets(BrokerBase):
-class IGMarkets:
+class IGMarkets_config(tk.Frame):
+    def __init__(self, igMarketObject, parent=None):
+        super(IGMarkets_config, self).__init__(parent)
+        self.igMarketObject = igMarketObject
+
+        self.endpointLabel = tk.Label(self, text="Account Type")
+        self.endpointLabel.grid(column=0, row=0)
+
+        comboVals = ['Live', 'Demo']
+        self.endpointCombo = ttk.Combobox(self, values=comboVals)
+        self.endpointCombo.grid(column=1, row=0)
+
+        self.apiKeyLabel = tk.Label(self, text="IG API Key")
+        self.apiKeyLabel.grid(column=0, row=1)
+        self.apiKeyValue = tk.Entry(self)
+        self.apiKeyValue.grid(column=1, row=1)
+
+        self.apiUsernameLabel = tk.Label(self, text="Username/Identifier")
+        self.apiUsernameLabel.grid(column=0, row=2)
+        self.apiUsernameValue = tk.Entry(self)
+        self.apiUsernameValue.grid(column=1, row=2)
+
+        self.apiPasswordLabel = tk.Label(self, text="Password")
+        self.apiPasswordLabel.grid(column=0, row=3)
+        self.apiPasswordValue = tk.Entry(self, show="*")
+        self.apiPasswordValue.grid(column=1, row=3)
+
+        self.testCredentialsButton = tk.Button(self, text="Test", command=self.testCredentials)
+        self.testCredentialsButton.grid(column=0, row=4)
+
+        self.pack()
+
+    def testCredentials(self):
+        self.igMarketObject.setEndpoint(self.endpointCombo.get())
+        authParams = {}
+        authParams['api_key'] = self.apiKeyValue.get()
+        authParams['identifier'] = self.apiUsernameValue.get()
+        authParams['password'] = self.apiPasswordValue.get()
+
+        if self.igMarketObject.authenticate(authParams):
+            print("Success")
+        else:
+            print("Failed")
+
+class IGMarkets(BrokerBase):
     def __init__(self):
-        #super(IGMarkets, self).__init__(self)
-        self.endpointPrefix = {'live': 'https://api.ig.com/gateway/deal',
-                'demo': "https://demo-api.ig.com/gateway/deal"}
+        super(IGMarkets, self).__init__("IG Markets")
+        self.endpointPrefix = {'Live': 'https://api.ig.com/gateway/deal',
+                'Demo': "https://demo-api.ig.com/gateway/deal"}
+        self.endpoint = None
 
         self.requiredAuthParams = {'api_key': 'string', 'identifier': 'string',
                 'password': 'password'}
@@ -23,6 +71,9 @@ class IGMarkets:
         self.authResponseFunc = {200: self.authSuccess, 403: self.authFailed}
         self.refreshResponseFunc = {200: self.refreshSuccess}
 
+    def setEndpoint(self, endpoint):
+        self.endpoint = self.endpointPrefix[endpoint]
+
     def getRequiredAuthParams(self):
         return self.requiredAuthParams
 
@@ -36,8 +87,8 @@ class IGMarkets:
         payload = {'identifier': authParams['identifier'],
                 'password': authParams['password']}
 
-        r = requests.post(self.endpointPrefix + "/session", headers=headers, data=json.dumps(payload))
-        self.authResponseFunc[r.status_code](r.json())
+        r = requests.post(self.endpoint + "/session", headers=headers, data=json.dumps(payload))
+        return self.authResponseFunc[r.status_code](r.json())
 
     def setOauthTokens(self, oauth):
         self.access_token = oauth['access_token']
@@ -51,8 +102,11 @@ class IGMarkets:
         self.lightstreamerEndpoint = response['lightstreamerEndpoint']
         self.setOauthTokens(response['oauthToken'])
 
+        return True
+
     def authFailed(self, response):
         print("Auth failed")
+        return False
 
     def refreshAccess(self):
         headers = {'Content-Type': 'application/json; charset=UTF-8',
@@ -63,8 +117,14 @@ class IGMarkets:
 
         payload = {'refresh_token': self.refresh_token}
 
-        r = requests.post(self.endpointPrefix + "/session/refresh-token", headers=headers, data=json.dumps(payload))
+        r = requests.post(self.endpoint + "/session/refresh-token", headers=headers, data=json.dumps(payload))
         self.refreshResponseFunc[r.status_code](r.json())
 
     def refreshSuccess(self, response):
         self.setOauthTokens(response)
+
+    def showConfig(self, parent):
+        IGMarkets_config(self, parent)
+
+# Instantiate this class
+IGMarkets()
