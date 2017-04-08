@@ -1,3 +1,5 @@
+from apis import *
+
 from panels import *
 
 if __name__ == "__main__":
