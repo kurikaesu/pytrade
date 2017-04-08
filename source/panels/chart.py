@@ -3,10 +3,17 @@ import tkinter.ttk as ttk
 
 class Candle:
     def __init__(self):
+        self._timestamp = None
         self._open = None
         self._high = None
         self._low = None
         self._close = None
+
+    def timestamp(self):
+        return self._timestamp
+
+    def setTimestamp(self, newTimestamp=None):
+        self._timestamp = newTimestamp
 
     def open(self):
         return self._open
@@ -54,6 +61,8 @@ class Chart:
         self._candles = []
         self._candleGroupSize = 1
         self._aggregateCandles = []
+
+        self._startingTimestamp = None # Should be from when the symbol starts
 
     def setGroupSize(self, newGroupSize=1):
         self._candleGroupSize = newGroupSize
