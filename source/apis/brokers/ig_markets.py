@@ -1,4 +1,5 @@
 from .broker_base import BrokerBase
+from .lightstream import *
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -54,6 +55,11 @@ class IGMarkets_config(tk.Frame):
         else:
             self.testCredentialsResponseString.set("Failed")
 
+class IGStream():
+    def __init__(self, endpoint, identifier, cst, token):
+        self.client = LightStreamClient(endpoint, "DEFAULT", identifier, "CST-" + cst + "|XST-" + token)
+        self.client.connect()
+
 class IGMarkets(BrokerBase):
     def __init__(self):
         super(IGMarkets, self).__init__("IG Markets")
@@ -71,9 +77,13 @@ class IGMarkets(BrokerBase):
         self.access_token = None
         self.refresh_token = None
         self.token_type = None
+        self.cst = None
+        self.security_token = None
 
         self.authResponseFunc = {200: self.authSuccess, 403: self.authFailed}
         self.refreshResponseFunc = {200: self.refreshSuccess}
+
+        self._stream = None
 
     def setEndpoint(self, endpoint):
         self.endpoint = self.endpointPrefix[endpoint]
@@ -83,14 +93,15 @@ class IGMarkets(BrokerBase):
 
     def authenticate(self, authParams):
         self.apiKey = authParams['api_key']
+        # Let's get the CST and X-SECURITY-TOKEN first
+        payload = {'identifier': authParams['identifier'],
+                'password': authParams['password']}
+
         headers = {'Content-Type': 'application/json; charset=UTF-8',
             'Accept': 'application/json; charset=UTF-8',
             'VERSION': '3',
             'X-IG-API-KEY': self.apiKey}
-
-        payload = {'identifier': authParams['identifier'],
-                'password': authParams['password']}
-
+        
         r = requests.post(self.endpoint + "/session", headers=headers, data=json.dumps(payload))
         return self.authResponseFunc[r.status_code](r.json())
 
@@ -99,12 +110,17 @@ class IGMarkets(BrokerBase):
         self.refresh_token = oauth['refresh_token']
         self.token_type = oauth['token_type']
 
+    def setSessionTokens(self, tokens):
+        self.cst = tokens['CST']
+        self.security_token = tokens['X-SECURITY-TOKEN']
+
     def authSuccess(self, response):
         self.clientId = response['clientId']
         self.accountId = response['accountId']
         self.timezoneOffset = response['timezoneOffset']
         self.lightstreamerEndpoint = response['lightstreamerEndpoint']
         self.setOauthTokens(response['oauthToken'])
+        self.getCstTokens()
 
         return True
 
@@ -125,6 +141,19 @@ class IGMarkets(BrokerBase):
 
     def refreshSuccess(self, response):
         self.setOauthTokens(response)
+
+    def getCstTokens(self):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Authorization': self.token_type + ' ' + self.access_token,
+            'X-IG-API-KEY': self.apiKey,
+            'IG-ACCOUNT-ID': self.accountId}
+
+        r = requests.get(self.endpoint + "/session?fetchSessionTokens=true", headers=headers)
+        self.setSessionTokens(r.headers)
+
+    def startStream(self):
+        self._stream = IGStream(self.lightstreamerEndpoint, self.accountId, self.cst, self.security_token)
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)
