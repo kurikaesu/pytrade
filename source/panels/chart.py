@@ -41,7 +41,7 @@ class Candle:
 
     def lastPrint(self, lastPrint=None):
         if lastPrint == None:
-            return # Maybe throw an exception
+            raise ValueError("The last print value cannot be None")
 
         if self._close == None:
             self._open = self._high = self._low = self._close = lastPrint
