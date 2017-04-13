@@ -30,3 +30,17 @@ class CryptTest(unittest.TestCase):
         res = self.c.encryptBytes(text)
         res2 = self.c.decryptBytes(res)
         self.assertTrue(res2 == text)
+
+    def testValidation(self):
+
+        username = b'bush@gmail.com'
+        password = b'ABC123'
+        incorrect_pw = b'ABC122'
+
+        self.c.setSalt(self.salt)
+        self.c.initWithPassword(password)
+        encrypted_username = self.c.encryptBytes(username)
+        res = self.c.validatePassword(incorrect_pw, encrypted_username, username)
+        self.assertFalse(res)
+        res = self.c.validatePassword(password, encrypted_username, username)
+        self.assertTrue(res)
