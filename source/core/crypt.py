@@ -48,7 +48,14 @@ class Crypt:
 
     def validatePassword(self, password, encrypted_username, username):
         self.initWithPassword(password)
-        if self.decryptBytes(encrypted_username) == username.encode():
+        try:
+            decrypted_un = self.decryptBytes(encrypted_username)
+        except Exception as e:
+            print("Exception::::: %s" % e)
+            return False
+        print(str(decrypted_un))
+        print(str(username))
+        if decrypted_un == username:
             return True
         else:
             return False

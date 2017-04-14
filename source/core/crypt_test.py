@@ -40,6 +40,7 @@ class CryptTest(unittest.TestCase):
         self.c.setSalt(self.salt)
         self.c.initWithPassword(password)
         encrypted_username = self.c.encryptBytes(username)
+
         res = self.c.validatePassword(incorrect_pw, encrypted_username, username)
         self.assertFalse(res)
         res = self.c.validatePassword(password, encrypted_username, username)
