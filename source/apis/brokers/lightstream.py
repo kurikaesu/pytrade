@@ -160,9 +160,10 @@ class LightStreamClient():
 			self._session.clear()
 			self._subscriptions.clear()
 			self._current_subscription_key = 0
+		else:
+			self.bind()
 
 	def _control(self, params):
-		print(self._session)
 		if self._session.get(b"SessionId") == None:
 			print("Session not ready")
 			return
@@ -170,6 +171,16 @@ class LightStreamClient():
 		params["LS_session"] = self._session[b"SessionId"]
 		r = requests.post(self._control_url + '/' + LightStreamClient.CONTROL_URL_PATH, data=params)
 		return r.content
+
+	def _join(self):
+		if self._stream_connection_thread:
+			self._stream_connection_thread.join()
+			self._stream_connection_thread = None
+
+	def bind(self):
+		self._stream_connection = requests.post(self._base_url + '/' + LightStreamClient.BIND_URL_PATH, data={"LS_session": self._session["SessionId"]})
+		self._bind_counter += 1
+		self._handleStream(self._readFromStream())
 
 	def connect(self):
 		payload = {"LS_op2": "create",
@@ -191,7 +202,7 @@ class LightStreamClient():
 		if self._stream_connection is not None:
 			serverResponse = self._control({"LS_op": LightStreamClient.OP_DESTROY})
 			if serverResponse == LightStreamClient.OK_CMD:
-				pass
+				self._join()
 			else:
 				pass # No connection to lighstreamer
 
@@ -204,11 +215,10 @@ class LightStreamClient():
 			"LS_op": LightStreamClient.OP_ADD,
 			"LS_data_adapter": subscription.adapter,
 			"LS_mode": subscription.mode,
-			"LS_schema": "+".join(subscription.field_names),
+			"LS_schema": " ".join(subscription.field_names),
 			"LS_id": " ".join(subscription.item_names),
 			})
 
-		print(response)
 		return self._current_subscription_key
 
 	def unsubscribe(self, subscription_key):

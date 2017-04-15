@@ -170,8 +170,17 @@ class IGMarkets(BrokerBase):
     def startStream(self):
         self._stream = IGStream(self.lightstreamerEndpoint, self.accountId, self.cst, self.security_token)
 
-    def subscribeSymbols(self, symbols):
-        self._stream.subscribe(symbols)
+    def subscribeSymbols(self, symbols, fields):
+        self._stream.subscribe(symbols, fields)
+
+    def findInstrument(self, searchString):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst}
+        r = requests.get(self.endpoint + "/markets", headers=headers, params={"searchTerm": searchString})
+        return r.content
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)
