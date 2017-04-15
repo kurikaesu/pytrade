@@ -6,6 +6,7 @@ import tkinter.ttk as ttk
 
 import requests
 import json
+import time
 
 class IGMarkets_config(tk.Frame):
     def __init__(self, igMarketObject, parent=None):
@@ -52,7 +53,6 @@ class IGMarkets_config(tk.Frame):
 
         if self.igMarketObject.authenticate(authParams):
             self.testCredentialsResponseString.set("Success")
-            self.igMarketObject.startStream()
         else:
             self.testCredentialsResponseString.set("Failed")
 
@@ -60,6 +60,20 @@ class IGStream():
     def __init__(self, endpoint, identifier, cst, token):
         self.client = LightStreamClient(endpoint, "DEFAULT", identifier, "CST-" + cst + "|XST-" + token)
         self.client.connect()
+
+    def subscribe(self, symbols, fields):
+        subscription = LightStreamSubscription(
+                mode="MERGE",
+                items=symbols,
+                fields=fields,
+                adapter="DEFAULT"
+            )
+
+        subscription.addListener(self.handleUpdate)
+        self.client.subscribe(subscription)
+
+    def handleUpdate(self, update):
+        print(update)
 
 class IGMarkets(BrokerBase):
     def __init__(self):
@@ -155,6 +169,9 @@ class IGMarkets(BrokerBase):
 
     def startStream(self):
         self._stream = IGStream(self.lightstreamerEndpoint, self.accountId, self.cst, self.security_token)
+
+    def subscribeSymbols(self, symbols):
+        self._stream.subscribe(symbols)
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)

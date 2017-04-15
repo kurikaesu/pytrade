@@ -47,8 +47,33 @@ class LightStreamSubscription:
 
 	def notifyUpdate(self, item_line):
 		toks = item_line.rstrip('\r\n').split('|')
+		undecodedItem = dict(list(zip(self.field_names, toks[1:])))
+
+		itemPos = int(toks[0])
+		currentItem = self._items_map.get(itemPos, {})
+
+		self._items_map[itemPos] = dict([
+				(k, self._decode(v, currentItem.get(k))) for k, v in list(undecodedItem.items())
+			])
+
+		itemInfo = {
+			"pos": itemPos,
+			"name": self.item_names[itemPos -1],
+			"values": self._items_map[itemPos]
+		}
+
+		for onItemUpdate in self._listeners:
+			onItemUpdate(itemInfo)
 
 class LightStreamClient():
+	CONNECTION_URL_PATH = "lightstreamer/create_session.txt"
+	BIND_URL_PATH = "lightstreamer/bind_session.txt"
+	CONTROL_URL_PATH = "lightstreamer/control.txt"
+
+	OP_ADD = "add"
+	OP_DELETE = "delete"
+	OP_DESTROY = "destroy"
+
 	PROBE_CMD = b"PROBE"
 	END_CMD = b"END"
 	LOOP_CMD = b"LOOP"
@@ -97,7 +122,7 @@ class LightStreamClient():
 
 	def _setControlLinkUrl(self, customAddress=None):
 		if customAddress != None:
-			pass
+			self._control_url = "%s//%s" % (self._base_url.split('/')[0], customAddress.decode("utf-8"))
 
 	def _receive(self):
 		rebind = False
@@ -136,24 +161,69 @@ class LightStreamClient():
 			self._subscriptions.clear()
 			self._current_subscription_key = 0
 
+	def _control(self, params):
+		print(self._session)
+		if self._session.get(b"SessionId") == None:
+			print("Session not ready")
+			return
+
+		params["LS_session"] = self._session[b"SessionId"]
+		r = requests.post(self._control_url + '/' + LightStreamClient.CONTROL_URL_PATH, data=params)
+		return r.content
+
 	def connect(self):
 		payload = {"LS_op2": "create",
 			"LS_cid": "mgQkwtwdysogQz2BJ4Ji kOj2Bg",
 			"LS_adapter_set": self._adapter_set,
 			"LS_user": self._user,
 			"LS_password": self._password}
-		self._stream_connection = requests.post(self._base_url + "/lightstreamer/create_session.txt", data=payload, stream=True)
+		self._stream_connection = requests.post(self._base_url + '/' + LightStreamClient.CONNECTION_URL_PATH, data=payload, stream=True)
 		self._iterLines = self._stream_connection.iter_lines()
 		self._handleStream(self._readFromStream())
+
+	def disconnect(self):
+		if self._stream_connection is not None:
+			self._stream_connection.close()
+		else:
+			pass # No connection to lightstreamer
+
+	def destroy(self):
+		if self._stream_connection is not None:
+			serverResponse = self._control({"LS_op": LightStreamClient.OP_DESTROY})
+			if serverResponse == LightStreamClient.OK_CMD:
+				pass
+			else:
+				pass # No connection to lighstreamer
 
 	def subscribe(self, subscription):
 		self._current_subscription_key += 1
 		self._subscriptions[self._current_subscription_key] = subscription
 
+		response = self._control({
+			"LS_Table": self._current_subscription_key,
+			"LS_op": LightStreamClient.OP_ADD,
+			"LS_data_adapter": subscription.adapter,
+			"LS_mode": subscription.mode,
+			"LS_schema": "+".join(subscription.field_names),
+			"LS_id": " ".join(subscription.item_names),
+			})
+
+		print(response)
 		return self._current_subscription_key
 
 	def unsubscribe(self, subscription_key):
-		pass
+		if subscription_key in self._subscriptions:
+			serverResponse = self._control({
+				"LS_Table": subscription_key,
+				"LS_op": LightStreamClient.OP_DELETE
+				})
+
+			if serverResponse == LightStreamClient.OK_CMD:
+				del self._subscriptions[subscription_key]
+			else:
+				pass # Server error
+		else:
+			pass # Unknown subscription key
 
 	def _forwardUpdateMessage(self, updateMessage):
 		tok = updateMessage.split(',')
