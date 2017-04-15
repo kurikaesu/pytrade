@@ -7,6 +7,7 @@ class DepthTape(tk.Frame):
     def __init__(self, parent=None, broker=None):
         super(DepthTape, self).__init__(parent)
         self.broker = broker
+        self.kekka_map = {}
         self.grid()
 
         # Symbol
@@ -14,6 +15,7 @@ class DepthTape(tk.Frame):
         self._symbolVar.trace("w", self.symbolTextChanged)
         self.symbolPicker = ttk.Combobox(self, textvariable=self._symbolVar)
         self.symbolPicker.bind("<Return>", self.getInstrument)
+        self.symbolPicker.bind("<<ComboboxSelected>>", self.setSubscribedInstrument)
         self.symbolPicker.grid(column=0, row=0, columnspan=3)
 
         # Last Print
@@ -21,11 +23,13 @@ class DepthTape(tk.Frame):
         self.lastPrintLabel.grid(column=4, row=0, columnspan=2)
 
         # Change
-        self.changeLabel = tk.Label(self, text="0.00")
+        self._changeLabelVar = tk.DoubleVar()
+        self.changeLabel = tk.Label(self, text="0.00", textvariable=self._changeLabelVar)
         self.changeLabel.grid(column=5, row=0)
 
         # Change %
-        self.changePercentLabel = tk.Label(self, text="0.00%")
+        self._changePercentVar = tk.StringVar()
+        self.changePercentLabel = tk.Label(self, text="0.00%", textvariable=self._changePercentVar)
         self.changePercentLabel.grid(column=6, row=0)
 
         # Last Volume
@@ -47,13 +51,15 @@ class DepthTape(tk.Frame):
         # L1 Highest
         self.highestLabel = tk.Label(self, text="High")
         self.highestLabel.grid(column=4, row=1)
-        self.highestValue = tk.Label(self, text="0.000")
+        self._highestValueVar = tk.DoubleVar()
+        self.highestValue = tk.Label(self, text="0.000", textvariable=self._highestValueVar)
         self.highestValue.grid(column=5, row=1)
 
         # L1 Lowest
         self.lowestLabel = tk.Label(self, text="Low")
         self.lowestLabel.grid(column=6, row=1)
-        self.lowestValue = tk.Label(self, text="0.000")
+        self._lowestValueVar = tk.DoubleVar()
+        self.lowestValue = tk.Label(self, text="0.000", textvariable=self._lowestValueVar)
         self.lowestValue.grid(column=7, row=1)
 
         # VWAP
@@ -155,9 +161,21 @@ class DepthTape(tk.Frame):
     def getInstrument(self, event=None):
         if self.broker != None:
             result = self.broker.findInstrument(self._symbolVar.get())
-            temp = json.loads(result)
-            for market in temp['markets']:
-                if market['instrumentName'] == self._symbolVar.get():
-                    self._bidValueVar.set(market['bid'])
-                    self._askValueVar.set(market['offer'])
-                    break
+            marketList = []
+            self.kekka_map.clear()
+            for market in result:
+                marketList.append(market.name)
+                self.kekka_map[market.name] = market.apiName
+
+            self.symbolPicker['values'] = marketList
+
+    def setSubscribedInstrument(self, *args):
+        if self.broker != None:
+            instrument = self.broker.getInstrument(self.kekka_map[self._symbolVar.get()])
+            self._bidValueVar.set(instrument.bid)
+            self._askValueVar.set(instrument.ask)
+            self._highestValueVar.set(instrument.high)
+            self._lowestValueVar.set(instrument.low)
+            self._changeLabelVar.set(instrument.netChange)
+            self._changePercentVar.set("%f%%" % (instrument.percentChange))
+            

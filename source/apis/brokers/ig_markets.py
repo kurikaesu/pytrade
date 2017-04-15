@@ -1,6 +1,8 @@
 from .broker_base import BrokerBase
 from .lightstream import *
 
+from ..instrument import *
+
 import tkinter as tk
 import tkinter.ttk as ttk
 
@@ -179,7 +181,29 @@ class IGMarkets(BrokerBase):
             'X-SECURITY-TOKEN': self.security_token,
             'CST': self.cst}
         r = requests.get(self.endpoint + "/markets", headers=headers, params={"searchTerm": searchString})
-        return r.content
+        temp = json.loads(r.content)
+        result = []
+        for market in temp["markets"]:
+            result.append(Instrument(market["epic"], market["instrumentName"], market["bid"],
+                market["offer"], market["high"], market["low"], market["netChange"],
+                market["percentageChange"]))
+        return result
+
+    def getInstrument(self, instrumentName):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Version': '3',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst}
+
+        r = requests.get(self.endpoint + "/markets/" + instrumentName, headers=headers)
+        temp = json.loads(r.content)
+
+        instDict = temp["instrument"]
+        snapshotDict = temp["snapshot"]
+        return Instrument(instDict["epic"], instDict["name"], snapshotDict["bid"], snapshotDict["offer"],
+            snapshotDict["high"], snapshotDict["low"], snapshotDict["netChange"], snapshotDict["percentageChange"])
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)
