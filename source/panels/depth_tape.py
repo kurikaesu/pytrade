@@ -36,19 +36,22 @@ class DepthTape(tk.Frame):
         self.changePercentLabel.grid(column=6, row=0)
 
         # Last Volume
-        self.lastVolumeLabel = tk.Label(self, text="0")
+        self._lastVolumeLabelVar = tk.DoubleVar()
+        self.lastVolumeLabel = tk.Label(self, text="0", textvariable=self._lastVolumeLabelVar)
         self.lastVolumeLabel.grid(column=7, row=0)
 
         # L1 Open
         self.openLabel = tk.Label(self, text="Open")
         self.openLabel.grid(column=0, row=1)
-        self.openValue = tk.Label(self, text="0.000")
+        self._openValueVar = tk.DoubleVar()
+        self.openValue = tk.Label(self, text="0.000", textvariable=self._openValueVar)
         self.openValue.grid(column=1, row=1)
 
         # L1 Close
         self.closeLabel = tk.Label(self, text="Close")
         self.closeLabel.grid(column=2, row=1)
-        self.closeValue = tk.Label(self, text="0.000")
+        self._closeValueVar = tk.DoubleVar()
+        self.closeValue = tk.Label(self, text="0.000", textvariable=self._closeValueVar)
         self.closeValue.grid(column=3, row=1)
 
         # L1 Highest
@@ -68,7 +71,8 @@ class DepthTape(tk.Frame):
         # VWAP
         self.vwapLabel = tk.Label(self, text="VWAP")
         self.vwapLabel.grid(column=8, row=1)
-        self.vwapValue = tk.Label(self, text="0.000")
+        self._vwapValueVar = tk.DoubleVar()
+        self.vwapValue = tk.Label(self, text="0.000", textvariable=self._vwapValueVar)
         self.vwapValue.grid(column=9, row=1)
 
         # L1 Bid
@@ -81,7 +85,8 @@ class DepthTape(tk.Frame):
         # L1 Bid Size
         self.bidSizeLabel = tk.Label(self, text="Bid Size")
         self.bidSizeLabel.grid(column=2, row=2)
-        self.bidSizeValue = tk.Label(self, text="0")
+        self._bidSizeValueVar = tk.DoubleVar()
+        self.bidSizeValue = tk.Label(self, text="0", textvariable=self._bidSizeValueVar)
         self.bidSizeValue.grid(column=3, row=2)
 
         # L1 Ask
@@ -94,13 +99,15 @@ class DepthTape(tk.Frame):
         # L1 Ask Size
         self.askSizeLabel = tk.Label(self, text="Ask Size")
         self.askSizeLabel.grid(column=6, row=2)
-        self.askSizeValue = tk.Label(self, text="0")
+        self._askSizeValueVar = tk.DoubleVar()
+        self.askSizeValue = tk.Label(self, text="0", textvariable=self._askSizeValueVar)
         self.askSizeValue.grid(column=7, row=2)
 
         # Exchange
         self.exchangeLabel = tk.Label(self, text="Exchange")
         self.exchangeLabel.grid(column=8, row=2)
-        self.exchangeValue = tk.Label(self, text="")
+        self._exchangeValueVar = tk.StringVar()
+        self.exchangeValue = tk.Label(self, text="", textvariable=self._exchangeValueVar)
         self.exchangeValue.grid(column=9, row=2)
 
         # L2 Bid
@@ -193,6 +200,13 @@ class DepthTape(tk.Frame):
             self._lowestValueVar.set(instrument.low)
             self._changeLabelVar.set(instrument.netChange)
             self._changePercentVar.set("%f%%" % (instrument.percentChange))
+            self._openValueVar.set(instrument.open)
+            self._closeValueVar.set(instrument.close)
+            self._bidSizeValueVar.set(instrument.bidSize)
+            self._askSizeValueVar.set(instrument.askSize)
+            self._vwapValueVar.set(instrument.vwap)
+            self._lastVolumeLabelVar.set(instrument.lastVolume)
+            self._exchangeValueVar.set(instrument.exchange)
 
             if self._subscription_token != None:
                 self.broker.unsubscribeSymbols(self._subscription_token)

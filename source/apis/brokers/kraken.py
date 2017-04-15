@@ -29,7 +29,16 @@ class Kraken(BrokerBase):
     def getInstrument(self, instrumentName):
         self._retrieveAssetPairs()
         instDict = self._assetPairs[instrumentName]
-        return Instrument(instDict["altname"], instrumentName)
+        r = requests.get(self.endpoint + "/public/Ticker", params={"pair": instDict["altname"]})
+        temp = json.loads(r.content)
+        resultDict = temp["result"][instDict["altname"]]
+        openPrice = float(resultDict["o"])
+        closePrice = float(resultDict["c"][0])
+        netChange = closePrice - openPrice
+        percentChange = ((100.0 / openPrice) * closePrice) - 100.
+        return Instrument(instDict["altname"], instrumentName, resultDict["b"][0], 
+            resultDict["a"][0], resultDict["h"][0], resultDict["l"][0], netChange, percentChange, openPrice, closePrice,
+            resultDict["b"][2], resultDict["a"][2], resultDict["p"][0], resultDict["c"][1], "KRAKEN")
 
 #instantiate this broker
 Kraken()
