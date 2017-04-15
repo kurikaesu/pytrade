@@ -160,6 +160,11 @@ class DepthTape(tk.Frame):
 
     def getInstrument(self, event=None):
         if self.broker != None:
+            wantedSymbol = self._symbolVar.get()
+            if wantedSymbol in self.kekka_map:
+                self.setSubscribedInstrument()
+                return
+
             result = self.broker.findInstrument(self._symbolVar.get())
             marketList = []
             self.kekka_map.clear()
@@ -168,6 +173,7 @@ class DepthTape(tk.Frame):
                 self.kekka_map[market.name] = market.apiName
 
             self.symbolPicker['values'] = marketList
+            self.symbolPicker.event_generate('<1>')
 
     def setSubscribedInstrument(self, *args):
         if self.broker != None:
