@@ -2,6 +2,23 @@ from source.core import *
 
 
 class User:
+
+    # Data header indexes
+    ID = 0
+    USERNAME = 1
+    ENCRYPTED_NAME = 2
+    SALT = 3
+    PROFILE = 4
+
+    # data header in the user table
+    COLUMN_HEADERS = [
+        'id',
+        'username',
+        'encrypted_name',
+        'salt',
+        'profile',
+    ]
+
     # variables to be stored in db
     __id = None
     __username = None
@@ -11,10 +28,10 @@ class User:
 
     # variables for runtime
     __crypt = None
+    __data = {'column_headers': COLUMN_HEADERS}
 
     def __init__(self, username):
         self.__username = username
-        self.__load_profile_from_db()
 
     @classmethod
     def load_user(cls, username, encrypted_username, salt):
@@ -36,6 +53,9 @@ class User:
 
     def get_username(self):
         return self.__username
+
+    def get_data(self):
+        return self.__data
 
     def set_password(self, raw_password):
         self.set_salt()
@@ -59,8 +79,6 @@ class User:
     def get_profile(self):
         pass
 
-    def __load_profile_from_db(self):
-        pass
 
 
 
