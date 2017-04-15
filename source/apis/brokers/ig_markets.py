@@ -87,6 +87,9 @@ class IGStream():
         subscription.addListener(callback)
         return self.client.subscribe(subscription)
 
+    def unsubscribe(self, subscriptionId):
+        self.client.unsubscribe(subscriptionId)
+
 class IGMarkets(BrokerBase):
     def __init__(self):
         super(IGMarkets, self).__init__("IG Markets")
@@ -184,6 +187,9 @@ class IGMarkets(BrokerBase):
 
     def subscribeSymbols(self, symbols, fields, callback):
         return self._stream.subscribe(symbols, fields, callback)
+
+    def unsubscribeSymbols(self, subscriptionToken):
+        self._stream.unsubscribe(subscriptionToken)
 
     def findInstrument(self, searchString):
         headers = {'Content-Type': 'application/json; charset=UTF-8',

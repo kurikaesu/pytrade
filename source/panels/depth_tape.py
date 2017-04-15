@@ -8,6 +8,9 @@ class DepthTape(tk.Frame):
         super(DepthTape, self).__init__(parent)
         self.broker = broker
         self.kekka_map = {}
+        self._subscription_token = None
+        self.parent = parent
+        self.parent.protocol("WM_DELETE_WINDOW", self._onClose)
         self.grid()
 
         # Symbol
@@ -154,6 +157,12 @@ class DepthTape(tk.Frame):
 
         self.pack()
 
+    def _onClose(self):
+        if self._subscription_token != None:
+            self.broker.unsubscribe(self._subscription_token)
+
+        self.parent.destroy()
+
     def symbolTextChanged(self, *args):
         symbol = self._symbolVar.get()
         # Search history maybe?
@@ -185,7 +194,10 @@ class DepthTape(tk.Frame):
             self._changeLabelVar.set(instrument.netChange)
             self._changePercentVar.set("%f%%" % (instrument.percentChange))
 
-            self.broker.subscribeSymbols([self.kekka_map[self._symbolVar.get()]], ["BID", "OFFER"], self.tickerEvent)
+            if self._subscription_token != None:
+                self.broker.unsubscribe(self._subscription_token)
+
+            self._subscription_token = self.broker.subscribeSymbols([self.kekka_map[self._symbolVar.get()]], ["BID", "OFFER"], self.tickerEvent)
 
     def tickerEvent(self, data):
         print(data)
