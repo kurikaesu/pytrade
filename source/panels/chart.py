@@ -1,6 +1,22 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
+import datetime
+import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
+
+import matplotlib.colors as colors
+import matplotlib.finance as finance
+import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
+import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
+
 class Candle:
     def __init__(self):
         self._timestamp = None
@@ -63,12 +79,43 @@ class Chart(tk.Frame):
         self._candleGroupSize = 1
         self._aggregateCandles = []
 
-        self._startingTimestamp = None # Should be from when the symbol starts
+        startDelta = datetime.timedelta(days=datetime.date.today().weekday(), weeks=1)
+        self._endTimestamp = datetime.date.today()
+        self._startingTimestamp = self._endTimestamp - startDelta
+
+        self._instrument = 'AUPH'
+        self._figure = Figure(figsize=(15, 4), dpi=100)
+        self._axes = self._figure.add_subplot(111)
+
+        self._canvas = FigureCanvasTkAgg(self._figure, self)
+        self._canvas.show()
+        self._canvas.get_tk_widget().pack()
+
+
+        self.button = tk.Button(self, text="Redraw", command=self.redraw)
+        self.button.pack()
+
         self.pack()
+
+    def setInstrumentName(self, instrumentName):
+        self._instrument = instrumentName
 
     def setGroupSize(self, newGroupSize=1):
         self._candleGroupSize = newGroupSize
 
+    def setStartTimestamp(self, timeStamp):
+        self._startingTimestamp = timeStamp
+
+    def setEndTimestamp(self, timeStamp):
+        self._endTimestamp = timeStamp
+
     def processPrint(self, lastPrint=None):
         if lastPrint == None:
             pass #This should throw an exception
+
+    def redraw(self):
+        self._axes.clear()
+        fh = finance.quotes_historical_yahoo_ohlc(self._instrument, self._startingTimestamp, self._endTimestamp)
+        prices = fh
+        finance.candlestick_ohlc(self._axes, prices, width=0.6)
+        self._canvas.draw()
