@@ -52,6 +52,7 @@ class IGMarkets_config(tk.Frame):
 
         if self.igMarketObject.authenticate(authParams):
             self.testCredentialsResponseString.set("Success")
+            self.igMarketObject.startStream()
         else:
             self.testCredentialsResponseString.set("Failed")
 
