@@ -159,7 +159,7 @@ class DepthTape(tk.Frame):
 
     def _onClose(self):
         if self._subscription_token != None:
-            self.broker.unsubscribe(self._subscription_token)
+            self.broker.unsubscribeSymbols(self._subscription_token)
 
         self.parent.destroy()
 
@@ -195,9 +195,11 @@ class DepthTape(tk.Frame):
             self._changePercentVar.set("%f%%" % (instrument.percentChange))
 
             if self._subscription_token != None:
-                self.broker.unsubscribe(self._subscription_token)
+                self.broker.unsubscribeSymbols(self._subscription_token)
 
             self._subscription_token = self.broker.subscribeSymbols([self.kekka_map[self._symbolVar.get()]], ["BID", "OFFER"], self.tickerEvent)
+
+            self.broker.getInstrumentPrices(self.kekka_map[self._symbolVar.get()])
 
     def tickerEvent(self, data):
         print(data)

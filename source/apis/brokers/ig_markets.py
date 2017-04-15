@@ -2,6 +2,7 @@ from .broker_base import BrokerBase
 from .lightstream import *
 
 from ..instrument import *
+#from ...core.candle import *
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -221,6 +222,29 @@ class IGMarkets(BrokerBase):
         snapshotDict = temp["snapshot"]
         return Instrument(instDict["epic"], instDict["name"], snapshotDict["bid"], snapshotDict["offer"],
             snapshotDict["high"], snapshotDict["low"], snapshotDict["netChange"], snapshotDict["percentageChange"])
+
+    def getInstrumentPrices(self, instrumentName, resolution="DAY", _from=None, _to=None):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Version': '3',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst}
+
+        params = {"resolution": resolution}
+        if _from != None:
+            params["from"] = _from
+
+        if _to != None:
+            params["to"] = _to
+
+        r = requests.get(self.endpoint + "/prices/" + instrumentName, headers=headers, params=params)
+        temp = json.loads(r.content)
+        for price in temp["prices"]:
+            print(price["closePrice"]["ask"])
+            
+        candles = []
+        return candles
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)
