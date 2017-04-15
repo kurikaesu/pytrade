@@ -1,13 +1,19 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
+import json
+
 class DepthTape(tk.Frame):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, broker=None):
         super(DepthTape, self).__init__(parent)
+        self.broker = broker
         self.grid()
 
         # Symbol
-        self.symbolPicker = ttk.Combobox(self)
+        self._symbolVar = tk.StringVar()
+        self._symbolVar.trace("w", self.symbolTextChanged)
+        self.symbolPicker = ttk.Combobox(self, textvariable=self._symbolVar)
+        self.symbolPicker.bind("<Return>", self.getInstrument)
         self.symbolPicker.grid(column=0, row=0, columnspan=3)
 
         # Last Print
@@ -59,7 +65,8 @@ class DepthTape(tk.Frame):
         # L1 Bid
         self.bidLabel = tk.Label(self, text="Bid")
         self.bidLabel.grid(column=0, row=2)
-        self.bidValue = tk.Label(self, text="0.000")
+        self._bidValueVar = tk.DoubleVar()
+        self.bidValue = tk.Label(self, text="0.000", textvariable=self._bidValueVar)
         self.bidValue.grid(column=1, row=2)
 
         # L1 Bid Size
@@ -71,7 +78,8 @@ class DepthTape(tk.Frame):
         # L1 Ask
         self.askLabel = tk.Label(self, text="Ask")
         self.askLabel.grid(column=4, row=2)
-        self.askValue = tk.Label(self, text="0")
+        self._askValueVar = tk.DoubleVar()
+        self.askValue = tk.Label(self, text="0", textvariable=self._askValueVar)
         self.askValue.grid(column=5, row=2)
 
         # L1 Ask Size
@@ -139,3 +147,17 @@ class DepthTape(tk.Frame):
         self.coverButton.grid(column=7, row=9, columnspan=2)
 
         self.pack()
+
+    def symbolTextChanged(self, *args):
+        symbol = self._symbolVar.get()
+        # Search history maybe?
+
+    def getInstrument(self, event=None):
+        if self.broker != None:
+            result = self.broker.findInstrument(self._symbolVar.get())
+            temp = json.loads(result)
+            for market in temp['markets']:
+                if market['instrumentName'] == self._symbolVar.get():
+                    self._bidValueVar.set(market['bid'])
+                    self._askValueVar.set(market['offer'])
+                    break

@@ -6,7 +6,6 @@ import tkinter.ttk as ttk
 
 import requests
 import json
-import time
 
 class IGMarkets_config(tk.Frame):
     def __init__(self, igMarketObject, parent=None):

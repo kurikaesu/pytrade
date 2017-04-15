@@ -19,6 +19,8 @@ class Settings(tk.Frame):
 
         self.brokerSettingsButton = tk.Button(self, text="Configure", command=self.configureBroker)
         self.brokerSettingsButton.grid(column=2, row=0)
+        self.brokerSetButton = tk.Button(self, text="Set", command=self.setBroker)
+        self.brokerSetButton.grid(column=3, row=0)
 
         self.pack()
 
@@ -26,3 +28,11 @@ class Settings(tk.Frame):
         brokerName = self.brokerCombo.get()
         if brokerName in self.pluginList:
             self.pluginList[brokerName].showConfig(tk.Toplevel(self.master))
+
+    def getCurrentBroker(self):
+        return self.currentBroker
+
+    def setBroker(self):
+        brokerName = self.brokerCombo.get()
+        if brokerName != "":
+            self.app.setCurrentBroker(brokerName)

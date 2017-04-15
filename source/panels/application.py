@@ -26,10 +26,16 @@ class Application(tk.Frame):
         self.brokerPlugins = None
         self.currentBroker = None
 
+        self.loadSettings()
+
+    def loadSettings(self):
+        pass
+
     def setBrokerPlugins(self, plugins):
         self.brokerPlugins = plugins
 
     def setCurrentBroker(self, broker):
+        print("Setting broker to %s" % (broker))
         self.currentBroker = self.brokerPlugins[broker]
 
     def openChart(self):
@@ -38,7 +44,7 @@ class Application(tk.Frame):
 
     def openOrderPanel(self):
         rootWindow = tk.Toplevel(self.master)
-        orderPanel = DepthTape(rootWindow)
+        orderPanel = DepthTape(rootWindow, self.currentBroker)
 
     def openTradingJournal(self):
         rootWindow = tk.Toplevel(self.master)
