@@ -12,6 +12,7 @@ import json
 class IGMarkets_config(tk.Frame):
     def __init__(self, igMarketObject, parent=None):
         super(IGMarkets_config, self).__init__(parent)
+        self.parent = parent
         self.igMarketObject = igMarketObject
 
         self.endpointLabel = tk.Label(self, text="Account Type")
@@ -43,6 +44,12 @@ class IGMarkets_config(tk.Frame):
         self.testCredentialsResponseLabel = tk.Label(self, textvariable=self.testCredentialsResponseString)
         self.testCredentialsResponseLabel.grid(column=0, row=5, columnspan=2)
 
+        self.acceptButton = tk.Button(self, text="Accept", command=self.accept)
+        self.acceptButton.grid(column=1, row=4)
+
+        self.cancelButton = tk.Button(self, text="Cancel", command=self.cancel)
+        self.cancelButton.grid(column=2, row=4)
+
         self.pack()
 
     def testCredentials(self):
@@ -57,12 +64,19 @@ class IGMarkets_config(tk.Frame):
         else:
             self.testCredentialsResponseString.set("Failed")
 
+    def accept(self):
+        self.igMarketObject.startStream()
+        self.parent.destroy()
+
+    def cancel(self):
+        self.parent.destroy()
+
 class IGStream():
     def __init__(self, endpoint, identifier, cst, token):
         self.client = LightStreamClient(endpoint, "DEFAULT", identifier, "CST-" + cst + "|XST-" + token)
         self.client.connect()
 
-    def subscribe(self, symbols, fields):
+    def subscribe(self, symbols, fields, callback):
         subscription = LightStreamSubscription(
                 mode="MERGE",
                 items=symbols,
@@ -70,11 +84,8 @@ class IGStream():
                 adapter="DEFAULT"
             )
 
-        subscription.addListener(self.handleUpdate)
-        self.client.subscribe(subscription)
-
-    def handleUpdate(self, update):
-        print(update)
+        subscription.addListener(callback)
+        return self.client.subscribe(subscription)
 
 class IGMarkets(BrokerBase):
     def __init__(self):
@@ -171,8 +182,8 @@ class IGMarkets(BrokerBase):
     def startStream(self):
         self._stream = IGStream(self.lightstreamerEndpoint, self.accountId, self.cst, self.security_token)
 
-    def subscribeSymbols(self, symbols, fields):
-        self._stream.subscribe(symbols, fields)
+    def subscribeSymbols(self, symbols, fields, callback):
+        return self._stream.subscribe(symbols, fields, callback)
 
     def findInstrument(self, searchString):
         headers = {'Content-Type': 'application/json; charset=UTF-8',

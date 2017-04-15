@@ -184,4 +184,9 @@ class DepthTape(tk.Frame):
             self._lowestValueVar.set(instrument.low)
             self._changeLabelVar.set(instrument.netChange)
             self._changePercentVar.set("%f%%" % (instrument.percentChange))
+
+            self.broker.subscribeSymbols([self.kekka_map[self._symbolVar.get()]], ["BID", "OFFER"], self.tickerEvent)
+
+    def tickerEvent(self, data):
+        print(data)
             
