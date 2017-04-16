@@ -46,6 +46,9 @@ class Kraken(BrokerBase):
                 r = requests.get(self.endpoint + "/public/Depth", params=params)
                 depthResponse = json.loads(r.content)
 
+                r = requests.get(self.endpoint + "/public/Trades", params=params)
+                tapeResponse = json.loads(r.content)
+
                 if "result" in ohlcResponse:
                     if lastId != ohlcResponse["result"]["last"]:
                         for instrumentName in ohlcResponse["result"]:
@@ -66,17 +69,23 @@ class Kraken(BrokerBase):
                                 self._subscriptionInstruments[instrumentName].netChange=closePrice - self._subscriptionInstruments[instrumentName].dayOpen
                                 self._subscriptionInstruments[instrumentName].percentChange=percentChange
 
-                        for instrumentName in depthResponse["result"]:
-                            if instrumentName in self._subscriptionInstruments:
-                                self._subscriptionInstruments[instrumentName].bidDepth = depthResponse["result"][instrumentName]["bids"]
-                                self._subscriptionInstruments[instrumentName].askDepth = depthResponse["result"][instrumentName]["asks"]
-
-                                self._subscriptionInstruments[instrumentName].bid = depthResponse["result"][instrumentName]["bids"][0][0]
-                                self._subscriptionInstruments[instrumentName].bidSize = depthResponse["result"][instrumentName]["bids"][0][1]
-                                self._subscriptionInstruments[instrumentName].ask = depthResponse["result"][instrumentName]["asks"][0][0]
-                                self._subscriptionInstruments[instrumentName].askSize = depthResponse["result"][instrumentName]["asks"][0][1]
-
                     lastId = ohlcResponse["result"]["last"]
+
+                if "result" in depthResponse:
+                    for instrumentName in depthResponse["result"]:
+                        if instrumentName in self._subscriptionInstruments:
+                            self._subscriptionInstruments[instrumentName].bidDepth = depthResponse["result"][instrumentName]["bids"]
+                            self._subscriptionInstruments[instrumentName].askDepth = depthResponse["result"][instrumentName]["asks"]
+
+                            self._subscriptionInstruments[instrumentName].bid = depthResponse["result"][instrumentName]["bids"][0][0]
+                            self._subscriptionInstruments[instrumentName].bidSize = depthResponse["result"][instrumentName]["bids"][0][1]
+                            self._subscriptionInstruments[instrumentName].ask = depthResponse["result"][instrumentName]["asks"][0][0]
+                            self._subscriptionInstruments[instrumentName].askSize = depthResponse["result"][instrumentName]["asks"][0][1]
+
+                if "result" in tapeResponse:
+                    for instrumentName in tapeResponse["result"]:
+                        if instrumentName in self._subscriptionInstruments:
+                            self._subscriptionInstruments[instrumentName].tapeDepth = tapeResponse["result"][instrumentName]
 
                 else:
                     print("Rate is too low. Increasing by 5 seconds")
@@ -95,52 +104,6 @@ class Kraken(BrokerBase):
                     onUpdate(instrument)
 
             time.sleep(1)
-        '''
-        params = {"pair": pair}
-        myInstrument = self.getInstrument(pair[0])
-        rate = self._waitTiers[self._myTier]
-        counter = 0
-        while self._subscriptionThreads[subscriptionToken][0]:
-            if counter >= rate:
-                counter = 0
-                try:
-                    if lastId != None:
-                        params["since"] = lastId
-                    r = requests.get(self.endpoint + "/public/OHLC", params=params)
-                    temp = json.loads(r.content)
-                    prices = temp["result"][pair[0]]
-                    lastPrint = prices[len(prices)-1]
-
-                    if lastId != temp["result"]["last"]:
-                        myInstrument.open=lastPrint[1]
-                        myInstrument.high=lastPrint[2]
-                        myInstrument.low=lastPrint[3]
-                        myInstrument.close=lastPrint[4]
-                        myInstrument.vwap=lastPrint[5]
-                        myInstrument.lastVolume=lastPrint[6]
-                        closePrice = float(lastPrint[4])
-                        myInstrument.netChange=closePrice-myInstrument.dayOpen
-                        percentChange = ((100.0 / myInstrument.dayOpen) * closePrice) - 100.0
-                        myInstrument.percentChange=percentChange
-
-                    lastId = temp["result"]["last"]
-                except KeyError:
-                    print(r.content)
-
-                try:
-                    r = requests.get(self.endpoint + "/public/Depth", params={"pair": pair})
-                    temp = json.loads(r.content)
-                except KeyError:
-                    print(r.content)
-
-            else:
-                counter += 1
-
-            myInstrument.nextRefresh=rate-counter
-            callback(myInstrument)
-
-            time.sleep(1)
-        '''
 
     def findInstrument(self, searchString):
         self._retrieveAssetPairs()
@@ -161,6 +124,14 @@ class Kraken(BrokerBase):
         closePrice = float(resultDict["c"][0])
         netChange = closePrice - openPrice
         percentChange = ((100.0 / openPrice) * closePrice) - 100.
+
+        r = requests.get(self.endpoint + "/public/Depth", params={"pair": instDict["altname"]})
+        temp = json.loads(r.content)
+        depth = temp["result"][instDict["altname"]]
+
+        r = requests.get(self.endpoint + "/public/Trades", params={"pair": instDict["altname"]})
+        temp = json.loads(r.content)
+        tape = temp["result"][instDict["altname"]]
         return Instrument(instDict["altname"], instrumentName, 
             bid=resultDict["b"][0], 
             ask=resultDict["a"][0], 
@@ -175,7 +146,10 @@ class Kraken(BrokerBase):
             askSize=resultDict["a"][2], 
             vwap=resultDict["p"][0], 
             lastVolume=resultDict["c"][1], 
-            exchange="KRAKEN")
+            exchange="KRAKEN",
+            bidDepth=depth["bids"],
+            askDepth=depth["asks"],
+            tapeDepth=tape)
 
     def subscribeSymbols(self, symbols, fields, callback):
         for symbol in symbols:

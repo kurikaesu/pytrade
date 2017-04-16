@@ -127,6 +127,8 @@ class DepthTape(tk.Frame):
         self.askTree.grid(column=4, row=3, columnspan=4)
 
         # Tape
+        self.tapeTree = ttk.Treeview(self, columns=depthColumns, show="headings")
+        self.tapeTree.grid(column=8, row=3, columnspan=4)
 
         # Order Quantity
         self.orderQuantityLabel = tk.Label(self, text="Quantity")
@@ -221,6 +223,18 @@ class DepthTape(tk.Frame):
             self._exchangeValueVar.set(instrument.exchange)
             self._nextRefreshValueVar.set(instrument.nextRefresh)
 
+            self.bidTree.delete(*self.bidTree.get_children())
+            for bid in instrument.bidDepth:
+                self.bidTree.insert('', 'end', values=(bid[0], bid[1]))
+
+            self.askTree.delete(*self.askTree.get_children())
+            for ask in instrument.askDepth:
+                self.askTree.insert('', 'end', values=(ask[0], ask[1]))
+
+            self.tapeTree.delete(*self.tapeTree.get_children())
+            for tape in instrument.tapeDepth:
+                self.tapeTree.insert('', 'end', values=(tape[0], tape[1]))
+
             if self._subscription_token != None:
                 self.broker.unsubscribeSymbols(self._subscription_token)
 
@@ -248,4 +262,8 @@ class DepthTape(tk.Frame):
         self.askTree.delete(*self.askTree.get_children())
         for ask in data.askDepth:
             self.askTree.insert('', 'end', values=(ask[0], ask[1]))
+
+        self.tapeTree.delete(*self.tapeTree.get_children())
+        for tape in data.tapeDepth:
+            self.tapeTree.insert('', 'end', values=(tape[0], tape[1]))
             
