@@ -4,7 +4,6 @@ from source.core import *
 class User:
 
     # Data header indexes
-    ID = 0
     USERNAME = 1
     ENCRYPTED_NAME = 2
     SALT = 3
@@ -12,7 +11,6 @@ class User:
 
     # data header in the user table
     COLUMN_HEADERS = [
-        'id',
         'username',
         'encrypted_name',
         'salt',
@@ -54,8 +52,27 @@ class User:
     def get_username(self):
         return self.__username
 
+    def get_id(self):
+        return self.__id
+
     def get_data(self):
         return self.__data
+
+    # Wrap user data into a structure for storing into db
+    def save_data(self):
+        if not self.__username:
+            raise RuntimeWarning("Username is not set")
+        if not self.__encrypted_name:
+            raise RuntimeWarning("Username is not encrypted")
+        if not self.__salt:
+            raise RuntimeWarning("Salt is not created")
+        # if not self.__profile:
+        #     raise RuntimeWarning("Profile in not initialised")
+
+        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__username
+        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__encrypted_name
+        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__salt
+        self.__data[self.COLUMN_HEADERS[self.PROFILE]] = self.__profile
 
     def set_password(self, raw_password):
         self.set_salt()
