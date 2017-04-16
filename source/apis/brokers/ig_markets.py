@@ -202,9 +202,13 @@ class IGMarkets(BrokerBase):
         temp = json.loads(r.content)
         result = []
         for market in temp["markets"]:
-            result.append(Instrument(market["epic"], market["instrumentName"], market["bid"],
-                market["offer"], market["high"], market["low"], market["netChange"],
-                market["percentageChange"]))
+            result.append(Instrument(market["epic"], market["instrumentName"], 
+                bid=market["bid"],
+                ask=market["offer"], 
+                high=market["high"], 
+                low=market["low"], 
+                netChange=market["netChange"],
+                percentChange=market["percentageChange"]))
         return result
 
     def getInstrument(self, instrumentName):
@@ -220,8 +224,13 @@ class IGMarkets(BrokerBase):
 
         instDict = temp["instrument"]
         snapshotDict = temp["snapshot"]
-        return Instrument(instDict["epic"], instDict["name"], snapshotDict["bid"], snapshotDict["offer"],
-            snapshotDict["high"], snapshotDict["low"], snapshotDict["netChange"], snapshotDict["percentageChange"])
+        return Instrument(instDict["epic"], instDict["name"], 
+            bid=snapshotDict["bid"], 
+            ask=snapshotDict["offer"],
+            high=snapshotDict["high"], 
+            low=snapshotDict["low"], 
+            netChange=snapshotDict["netChange"], 
+            pecentChange=snapshotDict["percentageChange"])
 
     def getInstrumentPrices(self, instrumentName, resolution="DAY", _from=None, _to=None):
         headers = {'Content-Type': 'application/json; charset=UTF-8',

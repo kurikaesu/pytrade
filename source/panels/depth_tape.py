@@ -40,6 +40,13 @@ class DepthTape(tk.Frame):
         self.lastVolumeLabel = tk.Label(self, text="0", textvariable=self._lastVolumeLabelVar)
         self.lastVolumeLabel.grid(column=7, row=0)
 
+        # Next Refresh
+        self.nextRefreshLabel = tk.Label(self, text="Next Refresh:")
+        self.nextRefreshLabel.grid(column=8, row=0)
+        self._nextRefreshValueVar = tk.StringVar()
+        self.nextRefreshValue = tk.Label(self, text="N/A", textvariable=self._nextRefreshValueVar)
+        self.nextRefreshValue.grid(column=9, row=0)
+
         # L1 Open
         self.openLabel = tk.Label(self, text="Open")
         self.openLabel.grid(column=0, row=1)
@@ -207,6 +214,7 @@ class DepthTape(tk.Frame):
             self._vwapValueVar.set(instrument.vwap)
             self._lastVolumeLabelVar.set(instrument.lastVolume)
             self._exchangeValueVar.set(instrument.exchange)
+            self._nextRefreshValueVar.set(instrument.nextRefresh)
 
             if self._subscription_token != None:
                 self.broker.unsubscribeSymbols(self._subscription_token)
@@ -216,5 +224,11 @@ class DepthTape(tk.Frame):
             self.broker.getInstrumentPrices(self.kekka_map[self._symbolVar.get()])
 
     def tickerEvent(self, data):
-        print(data)
+        self._openValueVar.set(data.open)
+        self._highestValueVar.set(data.high)
+        self._lowestValueVar.set(data.low)
+        self._closeValueVar.set(data.close)
+        self._vwapValueVar.set(data.vwap)
+        self._lastVolumeLabelVar.set(data.lastVolume)
+        self._nextRefreshValueVar.set(data.nextRefresh)
             
