@@ -257,7 +257,7 @@ class IGMarkets(BrokerBase):
         candles = []
         return candles
 
-    def dealEntry(self, dma, instrument, price, size, direction, orderType, stopLoss):
+    def dealEntry(self, dma, instrument, price, size, direction, orderType, stopLoss, takeProfit):
         headers = {'Content-Type': 'application/json; charset=UTF-8',
             'Accept': 'application/json; charset=UTF-8',
             'Version': '2',
@@ -282,9 +282,11 @@ class IGMarkets(BrokerBase):
                 payload["stopLevel"] = stopLoss
 
             r = requests.post(self.endpoint + "/positions/otc", headers=headers, data=json.dumps(payload))
-            print(r.content)
+            temp = json.loads(r.content)
+            print(temp)
+            return temp["dealReference"]
 
-    def closeEntry(self, dma, instrument, price, size, direction, orderType, stopLoss):
+    def closeEntry(self, dma, instrument, price, size, direction, orderType, stopLoss, takeProfit):
         headers = {'Content-Type': 'application/json; charset=UTF-8',
             'Accept': 'application/json; charset=UTF-8',
             'Version': '1',
@@ -299,17 +301,62 @@ class IGMarkets(BrokerBase):
                 "direction": "BUY" if direction=="LONG" else "SELL",
                 "orderType": orderType,
                 "expiry": "20-APR-17",
-                "size": str(size)
+                "size": size
                 }
 
             if orderType == "LIMIT":
-                payload["level"] = str(price)
+                payload["level"] = price
 
             r = requests.post(self.endpoint + "/positions/otc", headers=headers, data=json.dumps(payload))
             print(r.content)
 
-    def cancelWorkingOrder(self):
-        pass
+    def dealWorkingOrder(self, dma, instrument, price, size, direction, orderType, stopLoss, takeProfit, expirationType):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Version': '2',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst}
+
+        if dma == False:
+            tif = ""
+            if expirationType=="Good For Day":
+                tif = "GOOD_TILL_DATE"
+            elif expirationType=="Good Until Cancelled":
+                tif = "GOOD_TILL_CANCELLED"
+            payload = {
+                "currencyCode": instrument.currency,
+                "direction": "BUY" if direction=="LONG" else "SELL",
+                "epic": instrument.apiName,
+                "expiry": "20-APR-17",
+                "level": price,
+                "size": size,
+                "type": orderType,
+                "stopLevel": stopLoss,
+                "guaranteedStop": False,
+                "timeInForce": tif
+            }
+
+            if tif == "GOOD_TILL_DATE":
+                payload["goodTillDate"] = "2017/04/20 00:00:00"
+
+            r = requests.post(self.endpoint + "/workingorders/otc", headers=headers, data=json.dumps(payload))
+            temp = json.loads(r.content)
+            print(temp)
+            return temp["dealReference"]
+
+    def closeWorkingOrder(self, dma, dealId):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Version': '1',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst,
+            "_method": "DELETE"}
+
+        if dma == False:
+            r = requests.post(self.endpoint + "/workingorders/otc/" + dealId, headers=headers)
+            print(r.content)
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)

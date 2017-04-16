@@ -155,7 +155,9 @@ class DepthTape(tk.Frame):
         # Order Type
         self.orderTypeLabel = tk.Label(self, text="Type")
         self.orderTypeLabel.grid(column=3, row=4, columnspan=2)
-        self.orderTypeValue = ttk.Combobox(self)
+        orderTypes = ("LIMIT", "MARKET", "QUOTE")
+        self._orderTypeValueVar = tk.StringVar()
+        self.orderTypeValue = ttk.Combobox(self, values=orderTypes, textvariable=self._orderTypeValueVar)
         self.orderTypeValue.grid(column=3, row=5, columnspan=2)
 
         # Order Route
@@ -167,7 +169,9 @@ class DepthTape(tk.Frame):
         # Order Expiration
         self.orderExpirationLabel = tk.Label(self, text="Expiration")
         self.orderExpirationLabel.grid(column=7, row=4, columnspan=2)
-        self.orderExpirationValue = ttk.Combobox(self)
+        expirationTypes=("Good For Day", "Good Until Cancelled")
+        self._orderExpirationValueVar = tk.StringVar()
+        self.orderExpirationValue = ttk.Combobox(self, values=expirationTypes, textvariable=self._orderExpirationValueVar)
         self.orderExpirationValue.grid(column=7, row=5, columnspan=2)
 
         # Price
@@ -176,6 +180,28 @@ class DepthTape(tk.Frame):
         self._priceValueVar = tk.DoubleVar()
         self.priceValue = tk.Spinbox(self, from_=0, to=999999999, textvariable=self._priceValueVar)
         self.priceValue.grid(column=0, row=7, columnspan=3)
+
+        # Stop Loss
+        self.stopLossLabel = tk.Label(self, text="Stop")
+        self.stopLossLabel.grid(column=3, row=6, columnspan=2)
+        self._stopLossValueVar = tk.DoubleVar()
+        self.stopLossValue = tk.Spinbox(self, from_=0, to=99999999, textvariable=self._stopLossValueVar)
+        self.stopLossValue.grid(column=3, row=7, columnspan=2)
+
+        # Take Profit
+        self.takeProfitLabel = tk.Label(self, text="Take")
+        self.takeProfitLabel.grid(column=5, row=6, columnspan=2)
+        self._takeProfitValueVar = tk.DoubleVar()
+        self.takeProfitValue = tk.Spinbox(self, from_=0, to=99999999, textvariable=self._takeProfitValueVar)
+        self.takeProfitValue.grid(column=5, row=7, columnspan=2)
+
+        # Entry Type
+        self.entryTypeLabel = tk.Label(self, text="Entry Type")
+        self.entryTypeLabel.grid(column=7, row=6, columnspan=2)
+        entryTypes = ("Deal", "Working Order")
+        self._entryTypeValueVar = tk.StringVar()
+        self.entryTypeValue = ttk.Combobox(self, values=entryTypes, textvariable=self._entryTypeValueVar)
+        self.entryTypeValue.grid(column=7, row=7, columnspan=2)
 
         # Buy Button
         self.buyButton = tk.Button(self, text="Buy 0.00", command=self.longEntry)
@@ -203,19 +229,39 @@ class DepthTape(tk.Frame):
 
     def longEntry(self):
         if self.broker != None:
-            self.broker.dealEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "LONG", "LIMIT", None)
+            entryType = self._entryTypeValueVar.get()
+            if entryType != "":
+                if entryType == "Deal":
+                    self.broker.dealEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "LONG", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get())
+                elif entryType == "Working Order":
+                    self.broker.dealWorkingOrder(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "LONG", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get(), self._orderExpirationValueVar.get())
 
     def longClose(self):
         if self.broker != None:
-            self.broker.closeEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SELL", "LIMIT", None)
+            entryType = self._entryTypeValueVar.get()
+            if entryType != "":
+                if entryType == "Deal":
+                    self.broker.closeEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SELL", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get())
+                elif entryType == "Working Order":
+                    self.broker.dealWorkingOrder(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SELL", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get(), self._orderExpirationValueVar.get())
 
     def shortEntry(self):
         if self.broker != None:
-            self.broker.dealEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SHORT", "LIMIT", None)
+            entryType = self._entryTypeValueVar.get()
+            if entryType != "":
+                if entryType == "Deal":
+                    self.broker.dealEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SHORT", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get())
+                elif entryType == "Working Order":
+                    self.broker.dealWorkingOrder(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SHORT", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get(), self._orderExpirationValueVar.get())
 
     def shortClose(self):
         if self.broker != None:
-            self.broker.closeEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "BUY", "LIMIT", None)
+            entryType = self._entryTypeValueVar.get()
+            if entryType != "":
+                if entryType == "Deal":
+                    self.broker.closeEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "BUY", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get())
+                elif entryType == "Working Order":
+                    self.broker.dealWorkingOrder(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "BUY", self._orderTypeValueVar.get(), self._stopLossValueVar.get(), self._takeProfitValueVar.get(), self._orderExpirationValueVar.get())
 
     def symbolTextChanged(self, *args):
         symbol = self._symbolVar.get()
