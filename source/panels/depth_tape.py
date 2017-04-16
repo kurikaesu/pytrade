@@ -117,9 +117,14 @@ class DepthTape(tk.Frame):
         self.exchangeValue = tk.Label(self, text="", textvariable=self._exchangeValueVar)
         self.exchangeValue.grid(column=9, row=2)
 
+        depthColumns = ("Price", "Volume")
         # L2 Bid
+        self.bidTree = ttk.Treeview(self, columns=depthColumns, show="headings")
+        self.bidTree.grid(column=0, row=3, columnspan=4)
 
         # L2 Ask
+        self.askTree = ttk.Treeview(self, columns=depthColumns, show="headings")
+        self.askTree.grid(column=4, row=3, columnspan=4)
 
         # Tape
 
@@ -235,4 +240,12 @@ class DepthTape(tk.Frame):
         self._askSizeValueVar.set(data.askSize)
         self._lastVolumeLabelVar.set(data.lastVolume)
         self._nextRefreshValueVar.set(data.nextRefresh)
+
+        self.bidTree.delete(*self.bidTree.get_children())
+        for bid in data.bidDepth:
+            self.bidTree.insert('', 'end', values=(bid[0], bid[1]))
+
+        self.askTree.delete(*self.askTree.get_children())
+        for ask in data.askDepth:
+            self.askTree.insert('', 'end', values=(ask[0], ask[1]))
             
