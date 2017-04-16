@@ -112,7 +112,7 @@ class Kraken(BrokerBase):
         result = []
         for k, v in self._assetPairs.items():
             if searchString in k or searchString in v["altname"]:
-                result.append(Instrument(v["altname"], k))
+                result.append(Instrument(k, v["altname"]))
 
         return result
 
@@ -121,7 +121,7 @@ class Kraken(BrokerBase):
         instDict = self._assetPairs[instrumentName]
         r = requests.get(self.endpoint + "/public/Ticker", params={"pair": instDict["altname"]})
         temp = json.loads(r.content)
-        resultDict = temp["result"][instDict["altname"]]
+        resultDict = temp["result"][instrumentName]
         openPrice = float(resultDict["o"])
         closePrice = float(resultDict["c"][0])
         netChange = closePrice - openPrice
@@ -129,12 +129,12 @@ class Kraken(BrokerBase):
 
         r = requests.get(self.endpoint + "/public/Depth", params={"pair": instDict["altname"]})
         temp = json.loads(r.content)
-        depth = temp["result"][instDict["altname"]]
+        depth = temp["result"][instrumentName]
 
         r = requests.get(self.endpoint + "/public/Trades", params={"pair": instDict["altname"]})
         temp = json.loads(r.content)
-        tape = temp["result"][instDict["altname"]]
-        return Instrument(instDict["altname"], instrumentName, 
+        tape = temp["result"][instrumentName]
+        return Instrument(instrumentName, instDict["altname"],
             bid=resultDict["b"][0], 
             ask=resultDict["a"][0], 
             high=resultDict["h"][0], 
@@ -167,8 +167,8 @@ class Kraken(BrokerBase):
             self._subscriptionThread = threading.Thread(name="KRAKEN_STREAM-THREAD", 
             target=self._streamPair)
 
-        self._subscriptionThread.setDaemon(True)
-        self._subscriptionThread.start()
+            self._subscriptionThread.setDaemon(True)
+            self._subscriptionThread.start()
 
         return self._subscriptionCount
 
