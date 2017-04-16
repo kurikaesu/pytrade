@@ -120,15 +120,29 @@ class DepthTape(tk.Frame):
         depthColumns = ("Price", "Volume")
         # L2 Bid
         self.bidTree = ttk.Treeview(self, columns=depthColumns, show="headings")
-        self.bidTree.grid(column=0, row=3, columnspan=4)
+        self.bidTree.grid(column=0, row=3, columnspan=3)
+        self.bidTree.column("Price", width=140)
+        self.bidTree.heading("Price", text="Price")
+        self.bidTree.column("Volume", width=70)
+        self.bidTree.heading("Volume", text="Volume")
 
         # L2 Ask
         self.askTree = ttk.Treeview(self, columns=depthColumns, show="headings")
-        self.askTree.grid(column=4, row=3, columnspan=4)
+        self.askTree.grid(column=3, row=3, columnspan=3)
+        self.askTree.column("Price", width=140)
+        self.askTree.heading("Price", text="Price")
+        self.askTree.column("Volume", width=70)
+        self.askTree.heading("Volume", text="Volume")
 
         # Tape
         self.tapeTree = ttk.Treeview(self, columns=depthColumns, show="headings")
-        self.tapeTree.grid(column=8, row=3, columnspan=4)
+        self.tapeTree.grid(column=6, row=3, columnspan=3)
+        self.tapeTree.column("Price", width=140)
+        self.tapeTree.heading("Price", text="Price")
+        self.tapeTree.column("Volume", width=70)
+        self.tapeTree.heading("Volume", text="Volume")
+        self.tapeTree.tag_configure("buy", background="green")
+        self.tapeTree.tag_configure("sell", background="red")
 
         # Order Quantity
         self.orderQuantityLabel = tk.Label(self, text="Quantity")
@@ -233,7 +247,7 @@ class DepthTape(tk.Frame):
 
             self.tapeTree.delete(*self.tapeTree.get_children())
             for tape in instrument.tapeDepth:
-                self.tapeTree.insert('', 'end', values=(tape[0], tape[1]))
+                self.tapeTree.insert('', 'end', values=(tape[0], tape[1]), tags=("buy" if tape[3]=="b" else "sell",))
 
             if self._subscription_token != None:
                 self.broker.unsubscribeSymbols(self._subscription_token)
@@ -265,5 +279,5 @@ class DepthTape(tk.Frame):
 
         self.tapeTree.delete(*self.tapeTree.get_children())
         for tape in data.tapeDepth:
-            self.tapeTree.insert('', 'end', values=(tape[0], tape[1]))
+            self.tapeTree.insert('', 'end', values=(tape[0], tape[1]), tags=("buy" if tape[3]=="b" else "sell",))
             
