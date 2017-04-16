@@ -17,3 +17,5 @@ class Instrument:
         self.lastVolume = kwargs.get("lastVolume", 0.0)
         self.exchange = kwargs.get("exchange", 0.0)
         self.nextRefresh = kwargs.get("nextRefresh", "N/A")
+        self.bidDepth = []
+        self.askDepth = []

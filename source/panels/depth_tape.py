@@ -229,6 +229,10 @@ class DepthTape(tk.Frame):
         self._lowestValueVar.set(data.low)
         self._closeValueVar.set(data.close)
         self._vwapValueVar.set(data.vwap)
+        self._bidValueVar.set(data.bid)
+        self._bidSizeValueVar.set(data.bidSize)
+        self._askValueVar.set(data.ask)
+        self._askSizeValueVar.set(data.askSize)
         self._lastVolumeLabelVar.set(data.lastVolume)
         self._nextRefreshValueVar.set(data.nextRefresh)
             
