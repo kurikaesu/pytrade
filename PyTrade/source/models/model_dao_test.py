@@ -1,19 +1,34 @@
 import unittest
-import logging
+import os
+import sqlite3
+
 from .model_dao import ModelDAO
 from .user import User
 
-logging.basicConfig(level=logging.DEBUG)
 
 
 class TestModelDAOClass(unittest.TestCase):
+    username = b'bush@gmail.com'
+    password = b'abc123'
+    user = User(username)
+    user.set_password()
+    user.save_data()
 
     def test_save_object(self):
-        log = logging.getLogger("TestModelDAO")
-        username = b'bush@gmail.com'
-        dao = ModelDAO(None)
-        user = User(username)
-        dao.save_object(user)
 
-        log.debug('class name : %s' % dao.save_object(user) )
-        self.assertTrue(True, dao.save_object(user))
+        dao = ModelDAO(None)
+        dao.save_object(self.user)
+        #self.assertTrue(True, dao.save_object(self.user))
+
+    def test_get_max_id(self):
+
+        db = sqlite3.connect('TestModelDAO.db')
+        dao = ModelDAO(db)
+        self.user.save_data()
+
+    def __connectDB(self):
+        return sqlite3.connect('TestModelDAO.db')
+
+    def __destroyDB(self):
+        os.remove('TestModelDAO.db')
+

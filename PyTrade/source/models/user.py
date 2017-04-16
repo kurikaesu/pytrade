@@ -1,13 +1,13 @@
-from source.core import *
+from PyTrade.source.core import *
 
 
 class User:
 
     # Data header indexes
-    USERNAME = 1
-    ENCRYPTED_NAME = 2
-    SALT = 3
-    PROFILE = 4
+    USERNAME = 0
+    ENCRYPTED_NAME = 1
+    SALT = 2
+    PROFILE = 3
 
     # data header in the user table
     COLUMN_HEADERS = [
@@ -30,6 +30,7 @@ class User:
 
     def __init__(self, username):
         self.__username = username
+        self.__profile = ' '
 
     @classmethod
     def load_user(cls, username, encrypted_username, salt):
@@ -55,6 +56,10 @@ class User:
     def get_id(self):
         return self.__id
 
+    def set_id(self, id):
+        self.__id = id
+        print(id)
+
     def get_data(self):
         return self.__data
 
@@ -66,12 +71,13 @@ class User:
             raise RuntimeWarning("Username is not encrypted")
         if not self.__salt:
             raise RuntimeWarning("Salt is not created")
-        # if not self.__profile:
-        #     raise RuntimeWarning("Profile in not initialised")
+        if not self.__profile:
+            raise RuntimeWarning("Profile in not initialised")
 
-        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__username
-        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__encrypted_name
-        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__salt
+        # decode all values before storing them in db
+        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__username.decode()
+        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__encrypted_name.decode()
+        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__salt.decode()
         self.__data[self.COLUMN_HEADERS[self.PROFILE]] = self.__profile
 
     def set_password(self, raw_password):
