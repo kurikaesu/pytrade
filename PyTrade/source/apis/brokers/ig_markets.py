@@ -224,13 +224,15 @@ class IGMarkets(BrokerBase):
 
         instDict = temp["instrument"]
         snapshotDict = temp["snapshot"]
+
         return Instrument(instDict["epic"], instDict["name"], 
             bid=snapshotDict["bid"], 
             ask=snapshotDict["offer"],
             high=snapshotDict["high"], 
             low=snapshotDict["low"], 
             netChange=snapshotDict["netChange"], 
-            pecentChange=snapshotDict["percentageChange"])
+            pecentChange=snapshotDict["percentageChange"],
+            currency=instDict["currencies"][0]["code"])
 
     def getInstrumentPrices(self, instrumentName, resolution="DAY", _from=None, _to=None):
         headers = {'Content-Type': 'application/json; charset=UTF-8',
@@ -254,6 +256,60 @@ class IGMarkets(BrokerBase):
             
         candles = []
         return candles
+
+    def dealEntry(self, dma, instrument, price, size, direction, orderType, stopLoss):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Version': '2',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst}
+
+        if dma == False: #OTC
+            payload = {"currencyCode": instrument.currency,
+                "direction": "BUY" if direction=="LONG" else "SELL",
+                "orderType": orderType,
+                "epic": instrument.apiName,
+                "expiry": "20-APR-17",
+                "level": price,
+                "size": size,
+                "dealReference": "abc123",
+                "forceOpen": True,
+                "guaranteedStop": False}
+
+            if stopLoss != None:
+                payload["forceOpen"] = True
+                payload["stopLevel"] = stopLoss
+
+            r = requests.post(self.endpoint + "/positions/otc", headers=headers, data=json.dumps(payload))
+            print(r.content)
+
+    def closeEntry(self, dma, instrument, price, size, direction, orderType, stopLoss):
+        headers = {'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Version': '1',
+            'X-IG-API-KEY': self.apiKey,
+            'X-SECURITY-TOKEN': self.security_token,
+            'CST': self.cst,
+            "_method": "DELETE"}
+
+        if dma == False:
+            payload = {
+                "epic": instrument.apiName,
+                "direction": "BUY" if direction=="LONG" else "SELL",
+                "orderType": orderType,
+                "expiry": "20-APR-17",
+                "size": str(size)
+                }
+
+            if orderType == "LIMIT":
+                payload["level"] = str(price)
+
+            r = requests.post(self.endpoint + "/positions/otc", headers=headers, data=json.dumps(payload))
+            print(r.content)
+
+    def cancelWorkingOrder(self):
+        pass
 
     def showConfig(self, parent):
         IGMarkets_config(self, parent)

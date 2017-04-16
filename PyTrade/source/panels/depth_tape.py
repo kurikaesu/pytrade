@@ -9,6 +9,7 @@ class DepthTape(tk.Frame):
         self.broker = broker
         self.kekka_map = {}
         self._subscription_token = None
+        self._currentSymbol = None
         self.parent = parent
         self.parent.protocol("WM_DELETE_WINDOW", self._onClose)
         self.grid()
@@ -147,7 +148,8 @@ class DepthTape(tk.Frame):
         # Order Quantity
         self.orderQuantityLabel = tk.Label(self, text="Quantity")
         self.orderQuantityLabel.grid(column=0, row=4, columnspan=3)
-        self.orderQuantityValue = tk.Spinbox(self, from_=1, to=99999999)
+        self._orderQuantityValueVar = tk.DoubleVar()
+        self.orderQuantityValue = tk.Spinbox(self, from_=1, to=99999999, textvariable=self._orderQuantityValueVar)
         self.orderQuantityValue.grid(column=0, row=5, columnspan=3)
 
         # Order Type
@@ -171,23 +173,24 @@ class DepthTape(tk.Frame):
         # Price
         self.priceLabel = tk.Label(self, text="Price")
         self.priceLabel.grid(column=0, row=6, columnspan=3)
-        self.priceValue = tk.Spinbox(self, from_=0, to=999999999)
+        self._priceValueVar = tk.DoubleVar()
+        self.priceValue = tk.Spinbox(self, from_=0, to=999999999, textvariable=self._priceValueVar)
         self.priceValue.grid(column=0, row=7, columnspan=3)
 
         # Buy Button
-        self.buyButton = tk.Button(self, text="Buy 0.00")
+        self.buyButton = tk.Button(self, text="Buy 0.00", command=self.longEntry)
         self.buyButton.grid(column=0, row=9, columnspan=3)
 
         # Sell Button
-        self.sellButton = tk.Button(self, text="Sell 0.00")
+        self.sellButton = tk.Button(self, text="Sell 0.00", command=self.longClose)
         self.sellButton.grid(column=3, row=9, columnspan=2)
 
         # Short Button
-        self.shortButton = tk.Button(self, text="Short 0.00")
+        self.shortButton = tk.Button(self, text="Short 0.00", command=self.shortEntry)
         self.shortButton.grid(column=5, row=9, columnspan=2)
 
         # Cover Button
-        self.coverButton = tk.Button(self, text="Cover 0.00")
+        self.coverButton = tk.Button(self, text="Cover 0.00", command=self.shortClose)
         self.coverButton.grid(column=7, row=9, columnspan=2)
 
         self.pack()
@@ -197,6 +200,22 @@ class DepthTape(tk.Frame):
             self.broker.unsubscribeSymbols(self._subscription_token)
 
         self.parent.destroy()
+
+    def longEntry(self):
+        if self.broker != None:
+            self.broker.dealEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "LONG", "LIMIT", None)
+
+    def longClose(self):
+        if self.broker != None:
+            self.broker.closeEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SELL", "LIMIT", None)
+
+    def shortEntry(self):
+        if self.broker != None:
+            self.broker.dealEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "SHORT", "LIMIT", None)
+
+    def shortClose(self):
+        if self.broker != None:
+            self.broker.closeEntry(False, self._currentSymbol, self._priceValueVar.get(), self._orderQuantityValueVar.get(), "BUY", "LIMIT", None)
 
     def symbolTextChanged(self, *args):
         symbol = self._symbolVar.get()
@@ -222,6 +241,7 @@ class DepthTape(tk.Frame):
     def setSubscribedInstrument(self, *args):
         if self.broker != None:
             instrument = self.broker.getInstrument(self.kekka_map[self._symbolVar.get()])
+            self._currentSymbol=instrument
             self._bidValueVar.set(instrument.bid)
             self._askValueVar.set(instrument.ask)
             self._highestValueVar.set(instrument.high)

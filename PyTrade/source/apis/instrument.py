@@ -20,3 +20,4 @@ class Instrument:
         self.bidDepth = kwargs.get("bidDepth", [])
         self.askDepth = kwargs.get("askDepth", [])
         self.tapeDepth = kwargs.get("tapeDepth", [])
+        self.currency = kwargs.get("currency", None)
