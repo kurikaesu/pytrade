@@ -2,7 +2,7 @@ from .broker_base import BrokerBase
 from .lightstream import *
 
 from ..instrument import *
-#from ...core.candle import *
+from ...core.candle import *
 
 import tkinter as tk
 import tkinter.ttk as ttk
