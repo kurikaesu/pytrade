@@ -17,6 +17,8 @@ class Kraken(BrokerBase):
         self._subscriptionInstruments = {}
         self._waitTiers = {"0": 30, "1": 15}
         self._myTier = "0"
+        self._subscriptionCount = 0
+        self._subscriptionPairs = {}
 
     def _retrieveAssetPairs(self):
         r = requests.get(self.endpoint + "/public/AssetPairs")
@@ -157,6 +159,9 @@ class Kraken(BrokerBase):
                 self._currentSubscriptions[symbol] = []
 
             self._currentSubscriptions[symbol].append(callback)
+
+        self._subscriptionCount += 1
+        self._subscriptionPairs[self._subscriptionCount] = [symbols, callback]
         
         if self._subscriptionThread == None:
             self._subscriptionThread = threading.Thread(name="KRAKEN_STREAM-THREAD", 
@@ -165,8 +170,21 @@ class Kraken(BrokerBase):
         self._subscriptionThread.setDaemon(True)
         self._subscriptionThread.start()
 
+        return self._subscriptionCount
+
     def unsubscribeSymbols(self, subscriptionToken):
-        self._subscriptionThreads[subscriptionToken][0] = False
+        for symbol, pair in self._currentSubscriptions.items():
+            if symbol in self._subscriptionPairs[subscriptionToken][0]:
+                if self._subscriptionPairs[subscriptionToken][1] in self._currentSubscriptions[symbol]:
+                    self._currentSubscriptions[symbol].remove(self._subscriptionPairs[subscriptionToken][1])
+
+                    if len(self._currentSubscriptions[symbol]) == 0:
+                        del self._currentSubscriptions[symbol]
+
+                    break
+
+        del self._subscriptionPairs[subscriptionToken]
+
 
 #instantiate this broker
 Kraken()
