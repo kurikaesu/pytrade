@@ -20,6 +20,8 @@
 import requests
 import threading
 
+from ..instrument import *
+
 class LightStreamSubscription:
 	def __init__(self, mode, items, fields, adapter=""):
 		self.item_names = items
@@ -62,8 +64,20 @@ class LightStreamSubscription:
 			"values": self._items_map[itemPos]
 		}
 
+		print(itemInfo)
+
+		temp = Instrument(self.item_names[itemPos - 1], self.item_names[itemPos - 1],
+			bid=self._items_map[itemPos]["BID"],
+			ask=self._items_map[itemPos]["OFFER"],
+			high=self._items_map[itemPos]["HIGH"],
+			low=self._items_map[itemPos]["LOW"],
+			percentChange=self._items_map[itemPos]["CHANGE"])
+
 		for onItemUpdate in self._listeners:
-			onItemUpdate(itemInfo)
+			try:
+				onItemUpdate(temp)
+			except AttributeError:
+				pass
 
 class LightStreamClient():
 	CONNECTION_URL_PATH = "lightstreamer/create_session.txt"
@@ -74,13 +88,13 @@ class LightStreamClient():
 	OP_DELETE = "delete"
 	OP_DESTROY = "destroy"
 
-	PROBE_CMD = b"PROBE"
-	END_CMD = b"END"
-	LOOP_CMD = b"LOOP"
-	ERROR_CMD = b"ERROR"
-	SYNC_ERROR_CMD = b"SYNC ERROR"
-	OK_CMD = b"OK"
-	PREAMBLE_CMD = b"Preamble"
+	PROBE_CMD = "PROBE"
+	END_CMD = "END"
+	LOOP_CMD = "LOOP"
+	ERROR_CMD = "ERROR"
+	SYNC_ERROR_CMD = "SYNC ERROR"
+	OK_CMD = "OK"
+	PREAMBLE_CMD = "Preamble"
 	def __init__(self, base_url, adapter_set="", user="", password=""):
 		self._base_url = base_url
 		self._adapter_set = adapter_set
@@ -96,19 +110,19 @@ class LightStreamClient():
 		self._control_url = self._base_url
 
 	def _readFromStream(self):
-		return self._iterLines.__next__()
+		return self._iterLines.__next__().decode("utf-8")
 
 	def _handleStream(self, streamLine):
 		if streamLine == LightStreamClient.OK_CMD:
 			while True:
 				nextStreamLine = self._readFromStream()
 				if nextStreamLine:
-					sessionKey, sessionValue = nextStreamLine.split(b":", 1)
+					sessionKey, sessionValue = nextStreamLine.split(":", 1)
 					self._session[sessionKey] = sessionValue
 				else:
 					break
 
-			self._setControlLinkUrl(self._session.get(b"ControlAddress"))
+			self._setControlLinkUrl(self._session.get("ControlAddress"))
 
 			self._stream_connection_thread = threading.Thread(
 					name="STREAM_CONN_THREAD-{0}".format(self._bind_counter),
@@ -122,7 +136,7 @@ class LightStreamClient():
 
 	def _setControlLinkUrl(self, customAddress=None):
 		if customAddress != None:
-			self._control_url = "%s//%s" % (self._base_url.split('/')[0], customAddress.decode("utf-8"))
+			self._control_url = "%s//%s" % (self._base_url.split('/')[0], customAddress)
 
 	def _receive(self):
 		rebind = False
@@ -140,16 +154,16 @@ class LightStreamClient():
 				receive = False
 			elif message == LightStreamClient.PROBE_CMD:
 				pass # Probably just a heartbeat
-			elif message.startsWith(LightStreamClient.ERROR_CMD):
+			elif message.startswith(LightStreamClient.ERROR_CMD):
 				receive = False
-			elif message.startsWith(LightStreamClient.LOOP_CMD):
+			elif message.startswith(LightStreamClient.LOOP_CMD):
 				receive = False
 				rebind = True
-			elif message.startsWith(LightStreamClient.SYNC_ERROR_CMD):
+			elif message.startswith(LightStreamClient.SYNC_ERROR_CMD):
 				receive = False
-			elif message.startsWith(LightStreamClient.END_CMD):
+			elif message.startswith(LightStreamClient.END_CMD):
 				receive = False
-			elif message.startsWith(LightStreamClient.PREAMBLE_CMD):
+			elif message.startswith(LightStreamClient.PREAMBLE_CMD):
 				pass #do nothing
 			else:
 				self._forwardUpdateMessage(message)
@@ -164,11 +178,12 @@ class LightStreamClient():
 			self.bind()
 
 	def _control(self, params):
-		if self._session.get(b"SessionId") == None:
+		if self._session.get("SessionId") == None:
 			print("Session not ready")
 			return
 
-		params["LS_session"] = self._session[b"SessionId"]
+		params["LS_session"] = self._session["SessionId"]
+		print(params)
 		r = requests.post(self._control_url + '/' + LightStreamClient.CONTROL_URL_PATH, data=params)
 		return r.content
 
@@ -210,13 +225,18 @@ class LightStreamClient():
 		self._current_subscription_key += 1
 		self._subscriptions[self._current_subscription_key] = subscription
 
+		itemList = []
+		if subscription.mode == "MERGE":
+			for itemName in subscription.item_names:
+				itemList.append("MARKET:" + itemName)
+
 		response = self._control({
 			"LS_Table": self._current_subscription_key,
 			"LS_op": LightStreamClient.OP_ADD,
 			"LS_data_adapter": subscription.adapter,
 			"LS_mode": subscription.mode,
 			"LS_schema": " ".join(subscription.field_names),
-			"LS_id": " ".join(subscription.item_names),
+			"LS_id": " ".join(itemList),
 			})
 
 		return self._current_subscription_key
