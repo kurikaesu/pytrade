@@ -1,6 +1,5 @@
 import unittest
-from core import *
-from panels import *
+from source import *
 
 if __name__ == "__main__":
     unittest.main()

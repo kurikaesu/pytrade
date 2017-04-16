@@ -1,7 +1,4 @@
-from core import *
-from apis import *
-
-from panels import *
+from source import *
 import sqlite3
 
 if __name__ == "__main__":
