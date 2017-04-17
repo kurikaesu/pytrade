@@ -31,6 +31,7 @@ class LightStreamSubscription:
 		self.mode = mode
 		self.snapshot = "true"
 		self._listeners = []
+		self._subscriptionOwnerPage = None
 
 	def _decode(self, value, last):
 		if value == "$":
@@ -46,6 +47,9 @@ class LightStreamSubscription:
 
 	def addListener(self, listener):
 		self._listeners.append(listener)
+
+	def setOwnerPage(self, desc):
+		self._subscriptionOwnerPage = desc
 
 	def notifyUpdate(self, item_line):
 		toks = item_line.rstrip('\r\n').split('|')
@@ -66,16 +70,19 @@ class LightStreamSubscription:
 
 		print(itemInfo)
 
-		temp = Instrument(self.item_names[itemPos - 1], self.item_names[itemPos - 1],
-			bid=self._items_map[itemPos]["BID"],
-			ask=self._items_map[itemPos]["OFFER"],
-			high=self._items_map[itemPos]["HIGH"],
-			low=self._items_map[itemPos]["LOW"],
-			percentChange=self._items_map[itemPos]["CHANGE"])
+		returnedItem = None
+
+		if self._subscriptionOwnerPage == "DEPTH":
+			returnedItem = Instrument(self.item_names[itemPos - 1], self.item_names[itemPos - 1],
+					bid=self._items_map[itemPos]["BID"],
+					ask=self._items_map[itemPos]["OFFER"],
+					high=self._items_map[itemPos]["HIGH"],
+					low=self._items_map[itemPos]["LOW"],
+					percentChange=self._items_map[itemPos]["CHANGE"])
 
 		for onItemUpdate in self._listeners:
 			try:
-				onItemUpdate(temp)
+				onItemUpdate(returnedItem)
 			except AttributeError:
 				pass
 
@@ -183,8 +190,8 @@ class LightStreamClient():
 			return
 
 		params["LS_session"] = self._session["SessionId"]
-		print(params)
 		r = requests.post(self._control_url + '/' + LightStreamClient.CONTROL_URL_PATH, data=params)
+		print(r.content)
 		return r.content
 
 	def _join(self):

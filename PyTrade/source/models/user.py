@@ -1,4 +1,4 @@
-from PyTrade.source.core import *
+from ..core import *
 
 
 class User:

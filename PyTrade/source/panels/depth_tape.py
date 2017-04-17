@@ -318,7 +318,8 @@ class DepthTape(tk.Frame):
             if self._subscription_token != None:
                 self.broker.unsubscribeSymbols(self._subscription_token)
 
-            self._subscription_token = self.broker.subscribeSymbols([self.kekka_map[self._symbolVar.get()]], ["BID", "OFFER", "HIGH", "LOW", "MID_OPEN", "CHANGE"], self.tickerEvent)
+            fieldsToSubscribe = self.broker.getOrderBookSubscriptionFields()
+            self._subscription_token = self.broker.subscribeSymbols("DEPTH", [self.kekka_map[self._symbolVar.get()]], fieldsToSubscribe, self.tickerEvent)
 
             self.broker.getInstrumentPrices(self.kekka_map[self._symbolVar.get()])
 
