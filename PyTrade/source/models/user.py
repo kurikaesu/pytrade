@@ -30,13 +30,15 @@ class User:
 
     def __init__(self, username):
         self.__username = username
-        self.__profile = ' '
+        self.__profile = -1
 
     @classmethod
-    def load_user(cls, username, encrypted_username, salt):
-        user = cls(username)
-        user.set_salt(salt)
-        user.set_encrypted_name(encrypted_username)
+    def load_user(cls,id ,username, encrypted_username, salt, profile_id):
+        user = cls(username.encode())
+        user.set_id(id)
+        user.set_salt(salt.encode())
+        user.set_encrypted_name(encrypted_username.encode())
+        user.set_profile(int(profile_id))
 
         return cls(username)
 
@@ -102,6 +104,5 @@ class User:
     def get_profile(self):
         pass
 
-
-
-
+    def set_profile(self, profile_id):
+        self.__profile = profile_id
