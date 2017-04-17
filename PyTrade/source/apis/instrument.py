@@ -4,7 +4,7 @@ class Instrument:
         self.name = name
         self.dayOpen = kwargs.get("dayOpen", 0.0)
         self.open = kwargs.get("_open", 0.0)
-        self.close = kwargs.get("_close", 0.0)
+        self.close = kwargs.get("_close", None)
         self.bid = kwargs.get("bid", 0.0)
         self.bidSize = kwargs.get("bidSize", 0.0)
         self.ask = kwargs.get("ask", 0.0)

@@ -197,10 +197,10 @@ class IGMarkets(BrokerBase):
         return ["CONFIRMS", "OPU", "WOU"]
 
     def getChartSubscriptionFields(self):
-        return ["BID", "OFR", "LTP", "LTV", "TTV", "UTM", "DAY_OPEN_MID", "DAY_NET_CHG_MID", "DAY_PERC_CHG_MID", "DAY_HIGH", "DAY_LOW"]
+        return ["LTV", "TTV", "UTM", "DAY_OPEN_MID", "DAY_NET_CHG_MID", "DAY_PERC_CHG_MID", "DAY_HIGH", "DAY_LOW", "OFR_OPEN", "OFR_HIGH", "OFR_LOW", "OFR_CLOSE", "BID_OPEN", "BID_HIGH", "BID_LOW", "BID_CLOSE", "LTP_OPEN", "LTP_HIGH", "LTP_LOW", "LTP_CLOSE", "CONS_END", "CONS_TICK_COUNT"]
 
     def subscribeSymbols(self, page, symbols, fields, callback):
-        if page == "DEPTH":
+        if page in ["DEPTH", "DEPTH_CHART"]:
             return self._stream.subscribe("MERGE", symbols, fields, callback, page)
 
     def unsubscribeSymbols(self, subscriptionToken):
