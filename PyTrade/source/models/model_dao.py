@@ -80,7 +80,6 @@ class ModelDAO:
         res = rows.fetchone()
         return res[0]
 
-
     def save_object(self, model):
         # create a table if table is not exist
         table_name = self.__create_table_if_not_exist(model)
