@@ -21,6 +21,7 @@ import requests
 import threading
 
 from ..instrument import *
+from ..chart_data import *
 
 class LightStreamSubscription:
 	def __init__(self, mode, items, fields, adapter=""):
@@ -31,6 +32,8 @@ class LightStreamSubscription:
 		self.mode = mode
 		self.snapshot = "true"
 		self._listeners = []
+		self._subscriptionOwnerPage = None
+		self._interval = "SECOND"
 
 	def _decode(self, value, last):
 		if value == "$":
@@ -46,6 +49,12 @@ class LightStreamSubscription:
 
 	def addListener(self, listener):
 		self._listeners.append(listener)
+
+	def setOwnerPage(self, desc):
+		self._subscriptionOwnerPage = desc
+
+	def setInterval(self, interval):
+		self._interval = interval
 
 	def notifyUpdate(self, item_line):
 		toks = item_line.rstrip('\r\n').split('|')
@@ -64,18 +73,34 @@ class LightStreamSubscription:
 			"values": self._items_map[itemPos]
 		}
 
-		print(itemInfo)
+		#print(itemInfo)
 
-		temp = Instrument(self.item_names[itemPos - 1], self.item_names[itemPos - 1],
-			bid=self._items_map[itemPos]["BID"],
-			ask=self._items_map[itemPos]["OFFER"],
-			high=self._items_map[itemPos]["HIGH"],
-			low=self._items_map[itemPos]["LOW"],
-			percentChange=self._items_map[itemPos]["CHANGE"])
+		returnedItem = None
+
+		if self._subscriptionOwnerPage == "DEPTH":
+			returnedItem = Instrument(self.item_names[itemPos - 1], self.item_names[itemPos - 1],
+					bid=self._items_map[itemPos]["BID"],
+					ask=self._items_map[itemPos]["OFFER"],
+					high=self._items_map[itemPos]["HIGH"],
+					low=self._items_map[itemPos]["LOW"],
+					percentChange=self._items_map[itemPos]["CHANGE"])
+		elif self._subscriptionOwnerPage == "DEPTH_CHART":
+			closePrice = self._items_map[itemPos]["LTP_CLOSE"]
+			if closePrice == "":
+				closePrice = self._items_map[itemPos]["BID_CLOSE"] + "|" + self._items_map[itemPos]["OFR_CLOSE"]
+			returnedItem = ChartData(self.item_names[itemPos - 1],
+					lastTradedVolume=self._items_map[itemPos]["LTV"],
+					updateTime=self._items_map[itemPos]["UTM"],
+					dayOpen=self._items_map[itemPos]["DAY_OPEN_MID"],
+					netChange=self._items_map[itemPos]["DAY_NET_CHG_MID"],
+					percentChange=self._items_map[itemPos]["DAY_PERC_CHG_MID"],
+					dayHigh=self._items_map[itemPos]["DAY_HIGH"],
+					dayLow=self._items_map[itemPos]["DAY_LOW"],
+					lastClose=closePrice)
 
 		for onItemUpdate in self._listeners:
 			try:
-				onItemUpdate(temp)
+				onItemUpdate(returnedItem)
 			except AttributeError:
 				pass
 
@@ -148,7 +173,7 @@ class LightStreamClient():
 				print("Something went wrong")
 				message = None
 
-			print(message)
+			#print(message)
 
 			if message is None:
 				receive = False
@@ -183,7 +208,6 @@ class LightStreamClient():
 			return
 
 		params["LS_session"] = self._session["SessionId"]
-		print(params)
 		r = requests.post(self._control_url + '/' + LightStreamClient.CONTROL_URL_PATH, data=params)
 		return r.content
 
@@ -227,8 +251,12 @@ class LightStreamClient():
 
 		itemList = []
 		if subscription.mode == "MERGE":
-			for itemName in subscription.item_names:
-				itemList.append("MARKET:" + itemName)
+			if subscription._subscriptionOwnerPage == "DEPTH":
+				for itemName in subscription.item_names:
+					itemList.append("MARKET:" + itemName)
+			elif subscription._subscriptionOwnerPage == "DEPTH_CHART":
+				for itemName in subscription.item_names:
+					itemList.append("CHART:" + itemName + ":" + subscription._interval)
 
 		response = self._control({
 			"LS_Table": self._current_subscription_key,

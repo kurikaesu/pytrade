@@ -77,15 +77,16 @@ class IGStream():
         self.client = LightStreamClient(endpoint, "DEFAULT", identifier, "CST-" + cst + "|XST-" + token)
         self.client.connect()
 
-    def subscribe(self, symbols, fields, callback):
+    def subscribe(self, mode, symbols, fields, callback, page):
         subscription = LightStreamSubscription(
-                mode="MERGE",
+                mode=mode,
                 items=symbols,
                 fields=fields,
                 adapter="DEFAULT"
             )
 
         subscription.addListener(callback)
+        subscription.setOwnerPage(page)
         return self.client.subscribe(subscription)
 
     def unsubscribe(self, subscriptionId):
@@ -186,8 +187,21 @@ class IGMarkets(BrokerBase):
     def startStream(self):
         self._stream = IGStream(self.lightstreamerEndpoint, self.accountId, self.cst, self.security_token)
 
-    def subscribeSymbols(self, symbols, fields, callback):
-        return self._stream.subscribe(symbols, fields, callback)
+    def getAccountSubscriptionFields(self):
+        return ["PNL", "DEPOSIT", "AVAILABLE_CASH", "PNL_LR", "PNL_NLR", "FUNDS", "MARGIN", "MARGIN_LR", "MARGIN_NLR", "AVAILABLE_TO_DEAL", "EQUITY", "EQUITY_USED"]
+
+    def getOrderBookSubscriptionFields(self):
+        return ["MID_OPEN", "BID", "OFFER", "HIGH", "LOW", "CHANGE", "CHANGE_PCT", "UPDATE_TIME", "MARKET_DELAY", "MARKET_STATE", "STRIKE_PRICE", "ODDS"]
+
+    def getTradeSubscriptionFields(self):
+        return ["CONFIRMS", "OPU", "WOU"]
+
+    def getChartSubscriptionFields(self):
+        return ["LTV", "TTV", "UTM", "DAY_OPEN_MID", "DAY_NET_CHG_MID", "DAY_PERC_CHG_MID", "DAY_HIGH", "DAY_LOW", "OFR_OPEN", "OFR_HIGH", "OFR_LOW", "OFR_CLOSE", "BID_OPEN", "BID_HIGH", "BID_LOW", "BID_CLOSE", "LTP_OPEN", "LTP_HIGH", "LTP_LOW", "LTP_CLOSE", "CONS_END", "CONS_TICK_COUNT"]
+
+    def subscribeSymbols(self, page, symbols, fields, callback):
+        if page in ["DEPTH", "DEPTH_CHART"]:
+            return self._stream.subscribe("MERGE", symbols, fields, callback, page)
 
     def unsubscribeSymbols(self, subscriptionToken):
         self._stream.unsubscribe(subscriptionToken)

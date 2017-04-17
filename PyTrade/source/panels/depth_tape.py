@@ -8,7 +8,8 @@ class DepthTape(tk.Frame):
         super(DepthTape, self).__init__(parent)
         self.broker = broker
         self.kekka_map = {}
-        self._subscription_token = None
+        self._market_subscription_token = None
+        self._chart_subscription_token = None
         self._currentSymbol = None
         self.parent = parent
         self.parent.protocol("WM_DELETE_WINDOW", self._onClose)
@@ -58,7 +59,7 @@ class DepthTape(tk.Frame):
         # L1 Close
         self.closeLabel = tk.Label(self, text="Close")
         self.closeLabel.grid(column=2, row=1)
-        self._closeValueVar = tk.DoubleVar()
+        self._closeValueVar = tk.StringVar()
         self.closeValue = tk.Label(self, text="0.000", textvariable=self._closeValueVar)
         self.closeValue.grid(column=3, row=1)
 
@@ -222,8 +223,11 @@ class DepthTape(tk.Frame):
         self.pack()
 
     def _onClose(self):
-        if self._subscription_token != None:
-            self.broker.unsubscribeSymbols(self._subscription_token)
+        if self._market_subscription_token != None:
+            self.broker.unsubscribeSymbols(self._market_subscription_token)
+
+        if self._chart_subscription_token != None:
+            self.broker.unsubscribeSymbols(self._chart_subscription_token)
 
         self.parent.destroy()
 
@@ -315,24 +319,51 @@ class DepthTape(tk.Frame):
             for tape in instrument.tapeDepth:
                 self.tapeTree.insert('', 'end', values=(tape[0], tape[1]), tags=("buy" if tape[3]=="b" else "sell",))
 
-            if self._subscription_token != None:
-                self.broker.unsubscribeSymbols(self._subscription_token)
+            if self._market_subscription_token != None:
+                self.broker.unsubscribeSymbols(self._market_subscription_token)
 
-            self._subscription_token = self.broker.subscribeSymbols([self.kekka_map[self._symbolVar.get()]], ["BID", "OFFER", "HIGH", "LOW", "MID_OPEN", "CHANGE"], self.tickerEvent)
+            if self._chart_subscription_token != None:
+                self.broker.unsubscribeSymbols(self._chart_subscription_token)
+
+            mySymbol = [self.kekka_map[self._symbolVar.get()]]
+
+            fieldsToSubscribe = self.broker.getOrderBookSubscriptionFields()
+            self._market_subscription_token = self.broker.subscribeSymbols("DEPTH", mySymbol, fieldsToSubscribe, self.tickerEvent)
+
+            fieldsToSubscribe = self.broker.getChartSubscriptionFields()
+            self._chart_subscription_token = self.broker.subscribeSymbols("DEPTH_CHART", mySymbol, fieldsToSubscribe, self.chartEvent)
 
             self.broker.getInstrumentPrices(self.kekka_map[self._symbolVar.get()])
 
     def tickerEvent(self, data):
-        self._openValueVar.set(data.open)
-        self._highestValueVar.set(data.high)
-        self._lowestValueVar.set(data.low)
-        self._closeValueVar.set(data.close)
-        self._vwapValueVar.set(data.vwap)
-        self._bidValueVar.set(data.bid)
+        if data.open != 0.0:
+            self._openValueVar.set(data.open)
+
+        if data.high != 0.0:
+            self._highestValueVar.set(data.high)
+
+        if data.low != 0.0:
+            self._lowestValueVar.set(data.low)
+
+        if data.close != None:
+            self._closeValueVar.set(data.close)
+
+        if data.vwap != 0.0:
+            self._vwapValueVar.set(data.vwap)
+
+        if data.bid != 0.0:
+            self._bidValueVar.set(data.bid)
+
         self._bidSizeValueVar.set(data.bidSize)
-        self._askValueVar.set(data.ask)
+
+        if data.ask != 0.0:
+            self._askValueVar.set(data.ask)
+
         self._askSizeValueVar.set(data.askSize)
-        self._lastVolumeLabelVar.set(data.lastVolume)
+
+        if data.lastVolume != 0.0:
+            self._lastVolumeLabelVar.set(data.lastVolume)
+
         self._nextRefreshValueVar.set(data.nextRefresh)
 
         self.bidTree.delete(*self.bidTree.get_children())
@@ -346,4 +377,19 @@ class DepthTape(tk.Frame):
         self.tapeTree.delete(*self.tapeTree.get_children())
         for tape in data.tapeDepth:
             self.tapeTree.insert('', 'end', values=(tape[0], tape[1]), tags=("buy" if tape[3]=="b" else "sell",))
-            
+    
+    def chartEvent(self, data):
+        if data.dayOpen != 0.0:
+            self._openValueVar.set(data.dayOpen)
+
+        if data.lastClose != None:
+            self._closeValueVar.set(data.lastClose)
+
+        if data.netChange != None:
+            self._changeLabelVar.set(data.netChange)
+
+        if data.percentChange != None:
+            self._changePercentVar.set(data.percentChange + "%")
+
+        if data.lastTradedVolume != 0.0:
+            self._lastVolumeLabelVar.set(data.lastTradedVolume)
