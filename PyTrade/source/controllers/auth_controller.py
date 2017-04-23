@@ -17,7 +17,6 @@ class AuthController:
     def sign_up(self):
         user = User(self.__auth_view.get_username())
         user.set_password(self.__auth_view.get_password())
-        user.save_data()
         user.set_id(self.__data_access_o.save_object(user))
         self.__user = user
         pass
@@ -27,16 +26,16 @@ class AuthController:
         username = self.__auth_view.get_username()
         password = self.__auth_view.get_password()
         user = User(username)
-        user.set_password(self.__auth_view.get_password())
         id = self.__data_access_o.find_entry_with_unique_value(user, 'username', username)
         if id:
             print("find %d" % id)
+            self.__data_access_o.get_object(user, id)
         else:
             print("couldn't find")
             return
-        user.save_data()
+        user.restore_from_data()
         user.set_id(id)
-        if user.validate_password(password):
+        if user.validate_password(password.encode()):
             print("success")
         else:
             print("failed")

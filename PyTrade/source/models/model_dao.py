@@ -56,8 +56,6 @@ class ModelDAO:
             if data[header]:
                 attributes.append("%s = '%s'" % (header, data[header]))
         set_clause = ', '.join(attributes)
-        print(set_clause)
-        print(where_clause)
         return '%s %s' % (self.UPDATE_STATEMENT % (table_name, set_clause), where_clause)
 
     def __generate_create_statement(self, table_name, headers, data):
@@ -80,6 +78,22 @@ class ModelDAO:
         res = rows.fetchone()
         return res[0]
 
+    def get_object(self, model, id):
+        table_name = model.__class__.__name__
+        where_clause = '%s %s=%s' % (self.WHERE_CLAUSE, 'id', ('"%s"' % id))
+        select_statement = '%s %s' % (self.SELECT_STATEMENT % ('*', table_name), where_clause)
+        rows = self.__execute_sql(select_statement)
+        res = rows.fetchone()
+        data = model.get_data()
+        headers = data[self.HEADERS]
+        index = 1
+        for header in headers:
+            data[header] = res[index]
+            #print(data[header])
+            index += 1
+        model.set_data(data)
+
+
     def save_object(self, model):
         # create a table if table is not exist
         table_name = self.__create_table_if_not_exist(model)
@@ -89,10 +103,8 @@ class ModelDAO:
 
         if id:
             statement = self.__generate_update_statement(table_name, headers, data, id)
-            print(statement)
         else:
             statement = self.__generate_create_statement(table_name, headers, data)
-            print(statement)
 
         try:
             self.__execute_sql(statement)

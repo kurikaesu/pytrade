@@ -96,7 +96,6 @@ class Application(tk.Frame):
 
     def __enable_sign_in_btn(self, bool):
         if bool:
-            print("Sign in enabled")
             self.sign_in_button.config(state=NORMAL)
         else:
             self.sign_in_button.config(state=DISABLED)

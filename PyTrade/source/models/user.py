@@ -29,11 +29,11 @@ class User:
     __data = {'column_headers': COLUMN_HEADERS}
 
     def __init__(self, username):
-        self.__username = self.__to_bstring(username)
-        self.__profile = -1
+        self.set_username(username)
+        self.set_profile(-1)
 
     @classmethod
-    def load_user(cls,id ,username, encrypted_username, salt, profile_id):
+    def load_user(cls, id, username, encrypted_username, salt, profile_id):
         user = cls(username.encode())
         user.set_id(id)
         user.set_salt(salt.encode())
@@ -46,11 +46,18 @@ class User:
         self.__crypt = Crypt()
         if not salt:
             salt = Crypt.gen_salt()
+        salt = self.__to_bstring(salt)
         self.__crypt.setSalt(salt)
         self.__salt = salt
+        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__to_string(salt)
 
     def set_encrypted_name(self, encrypted_username):
         self.__encrypted_name = self.__to_bstring(encrypted_username)
+        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__to_string(encrypted_username)
+
+    def set_username(self, username):
+        self.__username = self.__to_bstring(username)
+        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__to_string(self.__username)
 
     def get_username(self):
         return self.__to_string(self.__username)
@@ -60,32 +67,23 @@ class User:
 
     def set_id(self, id):
         self.__id = id
-        print(id)
 
     def get_data(self):
         return self.__data
 
     # Wrap user data into a structure for storing into db
-    def save_data(self):
-        if not self.__username:
-            raise RuntimeWarning("Username is not set")
-        if not self.__encrypted_name:
-            raise RuntimeWarning("Username is not encrypted")
-        if not self.__salt:
-            raise RuntimeWarning("Salt is not created")
-        if not self.__profile:
-            raise RuntimeWarning("Profile in not initialised")
+    def set_data(self, data):
+        self.__data = data
+        pass
 
-        # decode all values before storing them in db
-        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__to_string(self.__username)
-        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__to_string(self.__encrypted_name)
-        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__to_string(self.__salt)
-        self.__data[self.COLUMN_HEADERS[self.PROFILE]] = self.__profile
+    def restore_from_data(self):
+        self.set_encrypted_name(self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]])
+        self.set_salt(self.__data[self.COLUMN_HEADERS[self.SALT]])
 
     def set_password(self, raw_password):
         self.set_salt()
         self.__crypt.initWithPassword(self.__to_bstring(raw_password))
-        self.__encrypted_name = self.__crypt.encryptBytes(self.__username)
+        self.set_encrypted_name(self.__crypt.encryptBytes(self.__username))
         pass
 
     def validate_password(self, raw_password):
@@ -106,6 +104,7 @@ class User:
 
     def set_profile(self, profile_id):
         self.__profile = profile_id
+        self.__data[self.COLUMN_HEADERS[self.PROFILE]] = profile_id
 
     def __to_bstring(self, data):
         try:
