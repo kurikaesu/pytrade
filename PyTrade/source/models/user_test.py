@@ -12,7 +12,7 @@ class TestUserClass(unittest.TestCase):
         user = User(username)
         user.set_password(password)
         # User is correctly created
-        self.assertEqual(username, user.get_username())
+        self.assertEqual(username.decode(), user.get_username())
         # Validate user password, should get True
         self.assertTrue(user.validate_password(password))
         # Validate user password, should get False

@@ -29,7 +29,7 @@ class User:
     __data = {'column_headers': COLUMN_HEADERS}
 
     def __init__(self, username):
-        self.__username = username
+        self.__username = self.__to_bstring(username)
         self.__profile = -1
 
     @classmethod
@@ -50,10 +50,10 @@ class User:
         self.__salt = salt
 
     def set_encrypted_name(self, encrypted_username):
-        self.__encrypted_name = encrypted_username
+        self.__encrypted_name = self.__to_bstring(encrypted_username)
 
     def get_username(self):
-        return self.__username
+        return self.__to_string(self.__username)
 
     def get_id(self):
         return self.__id
@@ -77,15 +77,15 @@ class User:
             raise RuntimeWarning("Profile in not initialised")
 
         # decode all values before storing them in db
-        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__username.decode()
-        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__encrypted_name.decode()
-        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__salt.decode()
+        self.__data[self.COLUMN_HEADERS[self.USERNAME]] = self.__to_string(self.__username)
+        self.__data[self.COLUMN_HEADERS[self.ENCRYPTED_NAME]] = self.__to_string(self.__encrypted_name)
+        self.__data[self.COLUMN_HEADERS[self.SALT]] = self.__to_string(self.__salt)
         self.__data[self.COLUMN_HEADERS[self.PROFILE]] = self.__profile
 
     def set_password(self, raw_password):
         self.set_salt()
-        self.__crypt.initWithPassword(raw_password)
-        self.__encrypted_name = self.__crypt.encryptBytes(self.get_username())
+        self.__crypt.initWithPassword(self.__to_bstring(raw_password))
+        self.__encrypted_name = self.__crypt.encryptBytes(self.__username)
         pass
 
     def validate_password(self, raw_password):
@@ -106,3 +106,17 @@ class User:
 
     def set_profile(self, profile_id):
         self.__profile = profile_id
+
+    def __to_bstring(self, data):
+        try:
+            data = data.encode()
+        except AttributeError:
+            pass
+        return data
+
+    def __to_string(self, data):
+        try:
+            data = data.decode()
+        except AttributeError:
+            pass
+        return data
